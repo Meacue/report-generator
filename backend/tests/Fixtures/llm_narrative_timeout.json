@@ -1,0 +1,7 @@
+{
+  "type": "error",
+  "error": {
+    "type": "request_timeout",
+    "message": "Request timed out after 30 seconds"
+  }
+}

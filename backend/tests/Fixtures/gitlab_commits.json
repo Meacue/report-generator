@@ -1,0 +1,32 @@
+[
+  {
+    "id": "abc123def456",
+    "short_id": "abc123d",
+    "title": "feat: add login endpoint",
+    "message": "feat: add login endpoint\n\nImplemented JWT-based authentication with refresh tokens",
+    "author_name": "Иванов И.И.",
+    "author_email": "ivanov@example.com",
+    "committed_date": "2024-01-15T10:30:00+03:00",
+    "parent_ids": ["prev123"]
+  },
+  {
+    "id": "bbb222ccc333",
+    "short_id": "bbb222c",
+    "title": "feat: add registration form validation",
+    "message": "feat: add registration form validation",
+    "author_name": "Иванов И.И.",
+    "author_email": "ivanov@example.com",
+    "committed_date": "2024-01-15T11:00:00+03:00",
+    "parent_ids": ["abc123def456"]
+  },
+  {
+    "id": "ccc333ddd444",
+    "short_id": "ccc333d",
+    "title": "fix: password validation regex",
+    "message": "fix: password validation regex\n\nFixed special characters handling",
+    "author_name": "Иванов И.И.",
+    "author_email": "ivanov@example.com",
+    "committed_date": "2024-01-15T14:15:00+03:00",
+    "parent_ids": ["bbb222ccc333"]
+  }
+]

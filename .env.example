@@ -1,0 +1,1 @@
+REDIS_PASSWORD=your_redis_password

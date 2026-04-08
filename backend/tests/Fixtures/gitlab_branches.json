@@ -1,0 +1,62 @@
+[
+  {
+    "name": "feature/PRJ-123_auth-module",
+    "commit": {
+      "id": "abc123def456",
+      "short_id": "abc123d",
+      "title": "feat: add login endpoint",
+      "author_name": "Иванов И.И.",
+      "committed_date": "2024-01-15T10:30:00+03:00"
+    },
+    "merged": false,
+    "protected": false
+  },
+  {
+    "name": "bugfix/PRJ-456_fix-auth-redirect",
+    "commit": {
+      "id": "def789ghi012",
+      "short_id": "def789g",
+      "title": "fix: correct redirect after login",
+      "author_name": "Иванов И.И.",
+      "committed_date": "2024-01-16T14:20:00+03:00"
+    },
+    "merged": true,
+    "protected": false
+  },
+  {
+    "name": "refactor/PRJ-789_cleanup-models",
+    "commit": {
+      "id": "ghi345jkl678",
+      "short_id": "ghi345j",
+      "title": "refactor: extract base model",
+      "author_name": "Иванов И.И.",
+      "committed_date": "2024-01-17T09:00:00+03:00"
+    },
+    "merged": false,
+    "protected": false
+  },
+  {
+    "name": "chore/update-dependencies",
+    "commit": {
+      "id": "mno901pqr234",
+      "short_id": "mno901p",
+      "title": "chore: update composer packages",
+      "author_name": "Иванов И.И.",
+      "committed_date": "2024-01-18T16:45:00+03:00"
+    },
+    "merged": false,
+    "protected": false
+  },
+  {
+    "name": "main",
+    "commit": {
+      "id": "zzz000aaa111",
+      "short_id": "zzz000a",
+      "title": "Merge branch 'release/v1.2.0'",
+      "author_name": "CI Bot",
+      "committed_date": "2024-01-19T00:00:00+03:00"
+    },
+    "merged": false,
+    "protected": true
+  }
+]

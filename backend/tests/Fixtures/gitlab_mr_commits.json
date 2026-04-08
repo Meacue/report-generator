@@ -1,0 +1,22 @@
+[
+    {
+        "id": "abc123def456789012345678901234567890abcd",
+        "short_id": "abc123de",
+        "title": "feat(auth): implement login flow",
+        "message": "feat(auth): implement login flow\n\nAdded JWT-based authentication",
+        "author_name": "Иванов И.И.",
+        "author_email": "ivanov@example.com",
+        "committed_date": "2025-12-23T14:30:00Z",
+        "parent_ids": ["parent123"]
+    },
+    {
+        "id": "def456abc789012345678901234567890abcdef01",
+        "short_id": "def456ab",
+        "title": "fix(auth): handle token expiry",
+        "message": "fix(auth): handle token expiry\n\nFixed refresh token logic",
+        "author_name": "Иванов И.И.",
+        "author_email": "ivanov@example.com",
+        "committed_date": "2025-12-23T16:00:00Z",
+        "parent_ids": ["abc123def456789012345678901234567890abcd"]
+    }
+]

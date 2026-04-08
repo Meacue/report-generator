@@ -1,0 +1,67 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Database\Factories\ReportDayTaskFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property int $id
+ * @property int $report_day_id
+ * @property int $report_task_id
+ * @property string|null $narrative
+ * @property bool $is_edited
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+class ReportDayTask extends Model
+{
+    /** @use HasFactory<ReportDayTaskFactory> */
+    use HasFactory;
+
+    protected $fillable = [
+        'report_day_id',
+        'report_task_id',
+        'narrative',
+        'is_edited',
+    ];
+
+    /**
+     * @return BelongsTo<ReportDay, $this>
+     */
+    public function reportDay(): BelongsTo
+    {
+        return $this->belongsTo(ReportDay::class);
+    }
+
+    /**
+     * @return BelongsTo<ReportTask, $this>
+     */
+    public function reportTask(): BelongsTo
+    {
+        return $this->belongsTo(ReportTask::class);
+    }
+
+    /**
+     * @return MorphMany<NarrativeHistory, $this>
+     */
+    public function narrativeHistory(): MorphMany
+    {
+        return $this->morphMany(NarrativeHistory::class, 'narratable');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'report_day_id'  => 'integer',
+            'report_task_id' => 'integer',
+            'is_edited'      => 'boolean',
+        ];
+    }
+}

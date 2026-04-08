@@ -1,0 +1,37 @@
+{
+  "result": {
+    "tasks": [
+      {
+        "id": "123",
+        "title": "Реализация модуля авторизации",
+        "status": "5",
+        "statusComplete": "5",
+        "groupId": "10",
+        "group": {"id": "10", "name": "ProjectX"},
+        "closedDate": "2024-01-16T18:00:00+03:00",
+        "url": "/company/personal/user/1/tasks/task/view/123/"
+      },
+      {
+        "id": "456",
+        "title": "Исправление редиректа авторизации",
+        "status": "5",
+        "statusComplete": "5",
+        "groupId": "10",
+        "group": {"id": "10", "name": "ProjectX"},
+        "closedDate": "2024-01-17T12:00:00+03:00",
+        "url": "/company/personal/user/1/tasks/task/view/456/"
+      },
+      {
+        "id": "789",
+        "title": "Рефакторинг моделей данных",
+        "status": "3",
+        "statusComplete": "5",
+        "groupId": "20",
+        "group": {"id": "20", "name": "ProjectY"},
+        "closedDate": null,
+        "url": "/company/personal/user/1/tasks/task/view/789/"
+      }
+    ]
+  },
+  "total": 3
+}

@@ -1,0 +1,71 @@
+services:
+  app:
+    build:
+      context: .docker/app
+      dockerfile: Dockerfile
+    container_name: rg-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/var/www
+      - .docker/app/nginx.conf:/etc/nginx/http.d/default.conf
+    depends_on:
+      - redis
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - REDIS_HOST=redis
+    networks:
+      - rg-network
+
+  worker:
+    build:
+      context: .docker/worker
+      dockerfile: Dockerfile
+    container_name: rg-worker
+    volumes:
+      - ./backend:/var/www
+    depends_on:
+      - redis
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - REDIS_HOST=redis
+    networks:
+      - rg-network
+
+  node:
+    build:
+      context: .docker/node
+      dockerfile: Dockerfile
+    container_name: rg-node
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - node_modules:/app/node_modules
+    depends_on:
+      - app
+    environment:
+      - NODE_ENV=development
+      - API_URL=http://app:8000
+    networks:
+      - rg-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: rg-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - .docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+    networks:
+      - rg-network
+
+volumes:
+  redis-data:
+  node_modules:
+
+networks:
+  rg-network:
+    driver: bridge

@@ -1,0 +1,45 @@
+{
+    "preset": "psr12",
+    "rules": {
+        "binary_operator_spaces": {
+            "default": "single_space",
+            "operators": {
+                "=>": "align_single_space_minimal"
+            }
+        },
+        "lowercase_keywords": true,
+        "align_multiline_comment": true,
+        "array_indentation": true,
+        "array_syntax": true,
+        "blank_line_after_namespace": true,
+        "psr_autoloading": true,
+        "blank_line_after_opening_tag": true,
+        "combine_consecutive_issets": true,
+        "combine_consecutive_unsets": true,
+        "concat_space": {
+            "spacing": "one"
+        },
+        "declare_parentheses": true,
+        "fully_qualified_strict_types": true,
+        "ordered_class_elements": {
+            "order": [
+                "use_trait",
+                "case",
+                "constant",
+                "property_public",
+                "property_protected",
+                "property_private",
+                "construct",
+                "method_public",
+                "method_protected",
+                "method_private"
+            ]
+        },
+        "class_attributes_separation": {
+            "elements": {
+                "method": "one"
+            }
+        },
+        "not_operator_with_successor_space": true
+    }
+}

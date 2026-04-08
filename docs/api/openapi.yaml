@@ -1,0 +1,1014 @@
+openapi: 3.0.3
+info:
+  title: Report Generator API
+  version: 1.0.0
+  description: API for developer report generation. Syncs data from GitLab and Bitrix24, matches commits to tasks, generates narratives via LLM, exports to .docx.
+
+servers:
+  - url: http://localhost:8000/api
+    description: Local development
+
+paths:
+  # ── Sync Management ──────────────────────────────────────────────────
+  /sync/status:
+    get:
+      tags: [Sync]
+      operationId: getSyncStatus
+      summary: Get latest synchronization status
+      responses:
+        '200':
+          description: Current sync status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStatus'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sync/trigger:
+    post:
+      tags: [Sync]
+      operationId: triggerSync
+      summary: Trigger manual synchronization
+      responses:
+        '202':
+          description: Sync started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Sync started
+        '409':
+          description: Sync already in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sync/resync:
+    post:
+      tags: [Sync]
+      operationId: resync
+      summary: Resynchronize data for a specific date range
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [date_from, date_to]
+              properties:
+                date_from:
+                  type: string
+                  format: date
+                  example: '2026-03-01'
+                date_to:
+                  type: string
+                  format: date
+                  example: '2026-03-10'
+      responses:
+        '202':
+          description: Resync started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Resync started
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── Inbox ─────────────────────────────────────────────────────────────
+  /inbox:
+    get:
+      tags: [Inbox]
+      operationId: getInbox
+      summary: List unresolved inbox items (branches without matched tasks)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: filter
+          in: query
+          description: "Filter by confidence level: none, probable, all"
+          schema:
+            type: string
+            enum: [none, probable, all]
+            default: all
+      responses:
+        '200':
+          description: Paginated list of inbox items
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InboxItem'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /inbox/assign:
+    post:
+      tags: [Inbox]
+      operationId: assignInboxItem
+      summary: Assign an inbox item (branch) to a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id, task_id]
+              properties:
+                branch_id:
+                  type: integer
+                  example: 42
+                task_id:
+                  type: integer
+                  example: 15
+      responses:
+        '200':
+          description: Assigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Assigned
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /inbox/bulk-assign:
+    post:
+      tags: [Inbox]
+      operationId: bulkAssignInboxItems
+      summary: Bulk assign multiple inbox items to tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assignments]
+              properties:
+                assignments:
+                  type: array
+                  items:
+                    type: object
+                    required: [branch_id, task_id]
+                    properties:
+                      branch_id:
+                        type: integer
+                      task_id:
+                        type: integer
+                  example:
+                    - branch_id: 42
+                      task_id: 15
+                    - branch_id: 43
+                      task_id: 16
+      responses:
+        '200':
+          description: Bulk assigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Bulk assigned
+                  count:
+                    type: integer
+                    example: 2
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /inbox/ignore:
+    post:
+      tags: [Inbox]
+      operationId: ignoreInboxItem
+      summary: Mark a branch as internal (ignore it)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id]
+              properties:
+                branch_id:
+                  type: integer
+                  example: 42
+      responses:
+        '200':
+          description: Marked as ignored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Ignored
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /inbox/create-task:
+    post:
+      tags: [Inbox]
+      operationId: createTaskFromInbox
+      summary: Create an internal task for a branch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [branch_id, title]
+              properties:
+                branch_id:
+                  type: integer
+                  example: 42
+                title:
+                  type: string
+                  example: "Internal refactoring of auth module"
+      responses:
+        '201':
+          description: Task created and assigned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Task created
+                  task_id:
+                    type: integer
+                    example: 99
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── Project Mappings ──────────────────────────────────────────────────
+  /projects/mappings:
+    get:
+      tags: [ProjectMappings]
+      operationId: getProjectMappings
+      summary: List all project mappings
+      responses:
+        '200':
+          description: List of mappings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProjectMapping'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags: [ProjectMappings]
+      operationId: createProjectMapping
+      summary: Create a new project mapping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [gitlab_repo_id, gitlab_repo_name, bitrix24_project_id, bitrix24_project_name]
+              properties:
+                gitlab_repo_id:
+                  type: integer
+                  example: 123
+                gitlab_repo_name:
+                  type: string
+                  example: my-project
+                bitrix24_project_id:
+                  type: integer
+                  example: 456
+                bitrix24_project_name:
+                  type: string
+                  example: "My Project"
+      responses:
+        '201':
+          description: Mapping created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ProjectMapping'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /projects/mappings/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+
+    put:
+      tags: [ProjectMappings]
+      operationId: updateProjectMapping
+      summary: Update an existing project mapping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gitlab_repo_id:
+                  type: integer
+                gitlab_repo_name:
+                  type: string
+                bitrix24_project_id:
+                  type: integer
+                bitrix24_project_name:
+                  type: string
+      responses:
+        '200':
+          description: Mapping updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ProjectMapping'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags: [ProjectMappings]
+      operationId: deleteProjectMapping
+      summary: Delete a project mapping
+      responses:
+        '204':
+          description: Mapping deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── Report Generation ─────────────────────────────────────────────────
+  /reports/generate:
+    post:
+      tags: [Reports]
+      operationId: generateReport
+      summary: Generate a report for the given period
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, date_from, date_to]
+              properties:
+                type:
+                  type: string
+                  enum: [daily, weekly, monthly, custom]
+                  example: weekly
+                date_from:
+                  type: string
+                  format: date
+                  example: '2026-03-09'
+                date_to:
+                  type: string
+                  format: date
+                  example: '2026-03-13'
+      responses:
+        '202':
+          description: Report generation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  status:
+                    type: string
+                    example: draft
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /reports/{id}/preview:
+    get:
+      tags: [Reports]
+      operationId: previewReport
+      summary: Get report preview with editable narratives
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Report preview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Report'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── Report Editing ────────────────────────────────────────────────────
+  /reports/{id}/day/{date}:
+    put:
+      tags: [Reports]
+      operationId: updateDayNarrative
+      summary: Edit the narrative for a specific day in a report
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [narrative]
+              properties:
+                narrative:
+                  type: string
+                  example: "Completed OAuth2 integration and fixed token expiry edge case."
+      responses:
+        '200':
+          description: Day narrative updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ReportDay'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /reports/{id}/task/{taskId}:
+    put:
+      tags: [Reports]
+      operationId: updateTaskNarrative
+      summary: Edit the narrative for a specific task in a report
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [narrative]
+              properties:
+                narrative:
+                  type: string
+                  example: "Implemented user authentication module with OAuth2 support."
+      responses:
+        '200':
+          description: Task narrative updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ReportTask'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /reports/{id}/task/{taskId}/regenerate:
+    post:
+      tags: [Reports]
+      operationId: regenerateTaskNarrative
+      summary: Regenerate the LLM narrative for a specific task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task narrative regenerated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ReportTask'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /reports/{id}/day/{date}/regenerate:
+    post:
+      tags: [Reports]
+      operationId: regenerateDayNarrative
+      summary: Regenerate the LLM narrative for a specific day
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Day narrative regenerated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ReportDay'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── Export ─────────────────────────────────────────────────────────────
+  /reports/{id}/export:
+    get:
+      tags: [Reports]
+      operationId: exportReport
+      summary: Download the report as a .docx file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Word document file
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── Settings ──────────────────────────────────────────────────────────
+  /settings:
+    get:
+      tags: [Settings]
+      operationId: getSettings
+      summary: Get current application settings
+      responses:
+        '200':
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Settings'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      tags: [Settings]
+      operationId: updateSettings
+      summary: Update application settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsInput'
+      responses:
+        '200':
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Updated
+                  data:
+                    $ref: '#/components/schemas/Settings'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+# ── Components ────────────────────────────────────────────────────────────
+components:
+  schemas:
+    SyncStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [idle, syncing, failed]
+          example: idle
+        last_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-03-13T02:00:00Z'
+        gitlab:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [success, failed, never]
+            last_sync_at:
+              type: string
+              format: date-time
+              nullable: true
+            items_synced:
+              type: integer
+            error_message:
+              type: string
+              nullable: true
+        bitrix24:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [success, failed, never]
+            last_sync_at:
+              type: string
+              format: date-time
+              nullable: true
+            items_synced:
+              type: integer
+            error_message:
+              type: string
+              nullable: true
+
+    InboxItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        branch_id:
+          type: integer
+        branch_name:
+          type: string
+          example: feature/PROJ-123-add-auth
+        gitlab_repo_id:
+          type: integer
+        parsed_task_number:
+          type: string
+          nullable: true
+          example: 'PROJ-123'
+        confidence_level:
+          type: string
+          enum: [auto, probable, none]
+        suggested_task:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/TaskSummary'
+        commits_count:
+          type: integer
+          example: 5
+        latest_commit_at:
+          type: string
+          format: date-time
+
+    TaskSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        bitrix24_task_id:
+          type: integer
+        title:
+          type: string
+        status:
+          type: string
+          enum: [completed, in_progress]
+
+    ProjectMapping:
+      type: object
+      properties:
+        id:
+          type: integer
+        gitlab_repo_id:
+          type: integer
+        gitlab_repo_name:
+          type: string
+        bitrix24_project_id:
+          type: integer
+        bitrix24_project_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [daily, weekly, monthly, custom]
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [draft, generated, exported]
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportDay'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportTask'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ReportDay:
+      type: object
+      properties:
+        id:
+          type: integer
+        report_id:
+          type: integer
+        date:
+          type: string
+          format: date
+        narrative:
+          type: string
+        source:
+          type: string
+          enum: [commits, bitrix24_fallback, manual]
+        is_edited:
+          type: boolean
+
+    ReportTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        report_id:
+          type: integer
+        task_id:
+          type: integer
+        narrative:
+          type: string
+        project_name:
+          type: string
+        is_edited:
+          type: boolean
+
+    Settings:
+      type: object
+      properties:
+        gitlab_token_set:
+          type: boolean
+          description: Whether GitLab token is configured (actual value is never exposed)
+        gitlab_username:
+          type: string
+          nullable: true
+        bitrix24_api_key_set:
+          type: boolean
+          description: Whether Bitrix24 API key is configured
+        bitrix24_user_id:
+          type: string
+          nullable: true
+        llm_provider:
+          type: string
+          enum: [claude, openai]
+          nullable: true
+        llm_api_key_set:
+          type: boolean
+        llm_system_prompt:
+          type: string
+          nullable: true
+        developer_name:
+          type: string
+          nullable: true
+        developer_position:
+          type: string
+          nullable: true
+        sync_schedule_time:
+          type: string
+          nullable: true
+          example: '02:00'
+
+    SettingsInput:
+      type: object
+      properties:
+        gitlab_token:
+          type: string
+          nullable: true
+        gitlab_username:
+          type: string
+          nullable: true
+        bitrix24_api_key:
+          type: string
+          nullable: true
+        bitrix24_user_id:
+          type: string
+          nullable: true
+        llm_provider:
+          type: string
+          enum: [claude, openai]
+          nullable: true
+        llm_api_key:
+          type: string
+          nullable: true
+        llm_system_prompt:
+          type: string
+          nullable: true
+        developer_name:
+          type: string
+          nullable: true
+        developer_position:
+          type: string
+          nullable: true
+        sync_schedule_time:
+          type: string
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+          example: 422
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            date_from: ['The date_from field is required.']
+
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {}
+        meta:
+          type: object
+          properties:
+            current_page:
+              type: integer
+              example: 1
+            last_page:
+              type: integer
+              example: 5
+            per_page:
+              type: integer
+              example: 20
+            total:
+              type: integer
+              example: 95
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: 404
+            message: Resource not found
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: 500
+            message: Internal server error

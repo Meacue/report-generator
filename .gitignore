@@ -1,0 +1,13 @@
+# IDE и редакторы
+/.idea/
+/.vscode/
+*.swp
+*.swo
+
+# Окружение
+.env
+!.env.example
+
+# ОС
+.DS_Store
+Thumbs.db
