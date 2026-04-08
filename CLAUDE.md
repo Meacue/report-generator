@@ -9,9 +9,7 @@
 
 ## Документация
 
-- **Архитектура:** `private-docs/architecture/directory-structure.md`
-- **API-контракт:** `private-docs/api/openapi.yaml`
-- **Руководство:** `private-docs/guides/agent-workflow.md`
+- **API-контракт:** `docs/api/openapi.yaml`
 
 ## Технический стек
 
@@ -30,8 +28,7 @@ report-generator/
 ├── backend/          — Laravel-приложение
 ├── frontend/         — React SPA (TypeScript)
 ├── .docker/          — Docker-конфигурация
-├── private-docs/     — приватная документация
-├── docs/             — публичная документация
+├── docs/             — Документация
 ├── tests/            — E2E и smoke-тесты
 ├── .claude/agents/   — 5 специализированных агентов
 └── .claude/skills/   — 5 skills для типовых операций
@@ -50,8 +47,7 @@ report-generator/
 
 1. Код на бэкенде — PHP 8.2+, строгая типизация, Laravel conventions
 2. Код на фронтенде — TypeScript strict mode, функциональные компоненты
-3. Каждый сервис в `backend/app/Services/` должен иметь интерфейс
-4. Все API endpoints описаны в разделе 13 PRD — не придумывай новых
+4. Все API endpoints описаны в директории docs/api/openapi.yaml
 5. Русский язык в UI, английский в коде и комментариях
 6. Conventional Commits для сообщений коммитов
 7. ПОСЛЕ написания кода — запусти Pint/Prettier (форматирование) и PHPStan/ESLint (анализ). Код с ошибками линтера не коммитится
@@ -78,10 +74,5 @@ Test Agent нужен ТОЛЬКО для написания НОВЫХ тест
 - `stage-planner` — планирование этапов, прогресс, декомпозиция задач
 - `code-quality` — линтеры, статический анализ, форматирование (Pint, PHPStan, ESLint, Prettier)
 - `code-review` — ревью кода на соответствие архитектуре и PRD
-- `project-status` — текущий статус реализации, сводка по тестам
 - `report-quality` — проверка качества LLM-нарративов
 - `branch-parser-spec` — спецификация парсера веток (справочник)
-
-## Текущий этап
-
-Функционал полностью реализован согласно PRD и документа архитектуры. В данный момент вносятся улучшения в проект.

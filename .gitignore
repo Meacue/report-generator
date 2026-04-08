@@ -11,3 +11,6 @@
 # ОС
 .DS_Store
 Thumbs.db
+
+# Агенты
+CLAUDE.md
