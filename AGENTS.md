@@ -95,6 +95,39 @@ Backend-тесты расположены в `backend/tests/`. Тесты исп
 
 При добавлении нового функционала — писать и unit-, и feature-тесты. Моки внешних сервисов (GitLab, Bitrix24, LLM) обязательны: тесты не должны делать реальных HTTP-запросов.
 
+Паттерн feature-теста:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Services\Narrative;
+
+use App\Services\LLM\LlmProviderInterface;
+use Tests\Mocks\MockLlmProvider;
+use Tests\TestCase;
+
+final class NarrativeServiceTest extends TestCase
+{
+    public function test_generates_narrative_for_matched_commits(): void
+    {
+        // GIVEN: мок LLM-провайдера и набор сопоставленных коммитов
+        $this->app->bind(LlmProviderInterface::class, MockLlmProvider::class);
+        $task = TaskFactory::new()->withCommits(3)->create();
+
+        // WHEN: запускаем генерацию нарратива
+        $result = $this->app->make(NarrativeService::class)->generate($task);
+
+        // THEN: получен текстовый нарратив без ошибок
+        $this->assertNotEmpty($result->text);
+        $this->assertDatabaseHas('narratives', ['task_id' => $task->id]);
+    }
+}
+```
+
+Ключевые правила: структура GIVEN-WHEN-THEN в комментариях, `final class`, мок внешних сервисов через контейнер, фабрики для тестовых данных, фикстуры JSON для ответов внешних API — в `backend/tests/Fixtures/`.
+
 Перед коммитом убедись, что проходят все проверки:
 
 ```bash
@@ -109,6 +142,20 @@ make lint && make test
 - Код и комментарии — на английском языке
 
 ## Архитектурные решения
+
+### Data Flow
+
+Основной поток данных при генерации отчёта:
+
+1. **Синхронизация** — `RunSyncJob` (очередь Redis) запускает `SyncService`, который параллельно забирает коммиты из GitLab API и задачи из Bitrix24 REST API, сохраняет в SQLite
+2. **Сопоставление** — `MatchingEngine` связывает коммиты с задачами по имени ветки и conventional commit-сообщениям. Несопоставленные коммиты попадают в Inbox
+3. **Нарратив** — `NarrativeService` отправляет сгруппированные коммиты в LLM (`LlmManager` → `ClaudeProvider` / `OpenAiProvider`) и получает человекочитаемые описания работы
+4. **Сборка отчёта** — `ReportBuilder` компонует данные (задачи + коммиты + нарративы) в структуру отчёта
+5. **Экспорт** — `WordExporter` (PHPWord) генерирует финальный `.docx`-файл
+
+Пользователь управляет процессом через React-фронтенд: запускает синхронизацию, проверяет сопоставления в Inbox, корректирует связи, генерирует и скачивает отчёт.
+
+### Сервисный слой
 
 Сервисный слой организован по доменам в `backend/app/Services/`:
 
@@ -132,4 +179,3 @@ make lint && make test
 - Не добавлять зависимости без обоснования — минимум внешних пакетов
 - Не делать реальных HTTP-вызовов в тестах — только моки
 - Не удалять и не игнорировать падающие тесты — чинить
-- `private-docs/` содержит внутреннюю документацию (PRD, ADR, архитектура) — не публиковать, не ссылаться в публичном коде
