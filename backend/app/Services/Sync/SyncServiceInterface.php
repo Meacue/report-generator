@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Sync;
 
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Models\SyncLog;
 
 interface SyncServiceInterface
@@ -26,5 +27,5 @@ interface SyncServiceInterface
     /**
      * Resync for a specific date range.
      */
-    public function resync(string $dateFrom, string $dateTo): void;
+    public function resync(DateRange $dateRange): void;
 }

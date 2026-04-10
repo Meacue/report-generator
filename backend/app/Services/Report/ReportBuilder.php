@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Report;
 
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Enums\ReportDaySource;
 use App\Enums\ReportStatus;
 use App\Enums\ReportType;
@@ -15,21 +16,20 @@ use App\Models\ReportDayTask;
 use App\Models\ReportTask;
 use App\Models\Task;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 use Illuminate\Support\Collection;
 
 class ReportBuilder implements ReportBuilderInterface
 {
-    public function generate(string $type, string $dateFrom, string $dateTo): Report
+    public function generate(string $type, DateRange $dateRange): Report
     {
         $report = Report::create([
             'type'      => ReportType::from($type),
-            'date_from' => $dateFrom,
-            'date_to'   => $dateTo,
+            'date_from' => $dateRange->from->toDateString(),
+            'date_to'   => $dateRange->to->toDateString(),
             'status'    => ReportStatus::Draft,
         ]);
 
-        $period = CarbonPeriod::create($dateFrom, $dateTo);
+        $period = $dateRange->toPeriod();
         /** @var array<int, ReportTask> $reportTaskMap */
         $reportTaskMap = [];
 
@@ -73,7 +73,7 @@ class ReportBuilder implements ReportBuilderInterface
             }
         }
 
-        $report->update(['status' => ReportStatus::Generated]);
+        $report->markAsGenerated();
 
         return $report->refresh();
     }

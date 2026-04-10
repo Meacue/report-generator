@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Sync;
 
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Enums\SyncSource;
 use App\Enums\SyncStatus;
 use App\Enums\TaskStatus;
@@ -88,12 +89,12 @@ class SyncService implements SyncServiceInterface
         }
     }
 
-    public function resync(string $dateFrom, string $dateTo): void
+    public function resync(DateRange $dateRange): void
     {
         $startedAt = CarbonImmutable::now();
 
         try {
-            $this->performGitLabSync($dateFrom, $dateTo);
+            $this->performGitLabSync($dateRange->from->toDateString(), $dateRange->to->toDateString());
             $this->createSyncLog(
                 source: SyncSource::GitLab,
                 status: SyncStatus::Success,
@@ -165,7 +166,7 @@ class SyncService implements SyncServiceInterface
                         'branch_name'    => $branchName,
                     ],
                     [
-                        'parsed_task_number'   => $parsed->parsedTaskNumber,
+                        'parsed_task_number'   => $parsed->parsedTaskNumber?->value,
                         'parsed_date'          => $parsed->parsedDate,
                         'parsed_parent_branch' => $parsed->parentBranch,
                         'parsed_info'          => $parsed->info,

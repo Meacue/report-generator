@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\GitLab;
 
+use App\Domain\Shared\ValueObjects\TaskNumber;
 use App\DTOs\ParsedBranch;
 use Carbon\Carbon;
 
@@ -87,10 +88,10 @@ class BranchParser
     /**
      * Extract task number if info is purely numeric.
      */
-    private function extractTaskNumber(string $info): ?int
+    private function extractTaskNumber(string $info): ?TaskNumber
     {
         if (preg_match('/^\d+$/', $info) === 1) {
-            return (int) $info;
+            return new TaskNumber($info);
         }
 
         return null;

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domain\Shared\ValueObjects\DateRange;
+use App\Enums\ResolvedBy;
 use Database\Factories\BranchFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -77,6 +79,29 @@ class Branch extends Model
     public function matchResults(): HasMany
     {
         return $this->hasMany(MatchResult::class);
+    }
+
+    public function isMatched(): bool
+    {
+        return $this->matchResults()
+            ->whereNotNull('task_id')
+            ->where('resolved_by', ResolvedBy::User)
+            ->exists();
+    }
+
+    public function hasTaskNumber(): bool
+    {
+        return $this->parsed_task_number !== null;
+    }
+
+    /**
+     * @return Collection<int, Commit>
+     */
+    public function getCommitsInPeriod(DateRange $dateRange): Collection
+    {
+        return $this->commits()
+            ->whereBetween('committed_at', [$dateRange->from, $dateRange->to])
+            ->get();
     }
 
     protected function casts(): array

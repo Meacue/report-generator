@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DTOs;
 
+use App\Domain\Shared\ValueObjects\TaskNumber;
 use Carbon\Carbon;
 
 final readonly class ParsedBranch
@@ -12,7 +13,7 @@ final readonly class ParsedBranch
         public string $branchName,
         public ?string $parentBranch,
         public ?string $info,
-        public ?int $parsedTaskNumber,
+        public ?TaskNumber $parsedTaskNumber,
         public ?Carbon $parsedDate,
         public ?string $parsedTime,
     ) {

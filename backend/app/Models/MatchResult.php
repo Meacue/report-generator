@@ -54,6 +54,45 @@ class MatchResult extends Model
         return $this->belongsTo(Task::class);
     }
 
+    public function isConfirmedByUser(): bool
+    {
+        return $this->resolved_by === ResolvedBy::User;
+    }
+
+    public function isAutoMatched(): bool
+    {
+        return $this->confidence_level === ConfidenceLevel::Auto
+            && $this->resolved_by === ResolvedBy::System;
+    }
+
+    public function isIgnored(): bool
+    {
+        return $this->task_id === null
+            && $this->confidence_level === ConfidenceLevel::None;
+    }
+
+    public static function createManualMatch(int $branchId, int $taskId): self
+    {
+        return self::create([
+            'branch_id'        => $branchId,
+            'task_id'          => $taskId,
+            'confidence_level' => ConfidenceLevel::Auto,
+            'resolved_by'      => ResolvedBy::User,
+            'resolved_at'      => now(),
+        ]);
+    }
+
+    public static function createIgnored(int $branchId): self
+    {
+        return self::create([
+            'branch_id'        => $branchId,
+            'task_id'          => null,
+            'confidence_level' => ConfidenceLevel::None,
+            'resolved_by'      => ResolvedBy::User,
+            'resolved_at'      => now(),
+        ]);
+    }
+
     protected function casts(): array
     {
         return [

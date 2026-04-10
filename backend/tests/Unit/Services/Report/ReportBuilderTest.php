@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Report;
 
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Enums\ReportDaySource;
 use App\Enums\ReportStatus;
 use App\Models\Branch;
@@ -25,7 +26,7 @@ class ReportBuilderTest extends TestCase
         $dateFrom = '2026-03-09';
         $dateTo = '2026-03-11';
 
-        $report = $this->builder->generate('weekly', $dateFrom, $dateTo);
+        $report = $this->builder->generate('weekly', new DateRange($dateFrom, $dateTo));
 
         $this->assertSame(ReportStatus::Generated, $report->status);
         $this->assertSame($dateFrom, $report->date_from->format('Y-m-d'));
@@ -53,7 +54,7 @@ class ReportBuilderTest extends TestCase
             'committed_at' => '2026-03-10 14:00:00',
         ]);
 
-        $report = $this->builder->generate('daily', '2026-03-10', '2026-03-10');
+        $report = $this->builder->generate('daily', new DateRange('2026-03-10', '2026-03-10'));
 
         $report->load('reportTasks');
         $this->assertCount(1, $report->reportTasks);
@@ -74,7 +75,7 @@ class ReportBuilderTest extends TestCase
             'message'      => 'feat: add user auth',
         ]);
 
-        $report = $this->builder->generate('daily', '2026-03-10', '2026-03-10');
+        $report = $this->builder->generate('daily', new DateRange('2026-03-10', '2026-03-10'));
         $preview = $this->builder->getPreview($report);
 
         $this->assertArrayHasKey('id', $preview);
@@ -99,7 +100,7 @@ class ReportBuilderTest extends TestCase
 
     public function test_day_without_commits_gets_fallback_source(): void
     {
-        $report = $this->builder->generate('daily', '2026-03-10', '2026-03-10');
+        $report = $this->builder->generate('daily', new DateRange('2026-03-10', '2026-03-10'));
 
         $report->load('reportDays');
         $reportDay = $report->reportDays->first();
@@ -123,7 +124,7 @@ class ReportBuilderTest extends TestCase
             'message'      => 'fix: password validation regex',
         ]);
 
-        $report = $this->builder->generate('daily', '2026-03-10', '2026-03-10');
+        $report = $this->builder->generate('daily', new DateRange('2026-03-10', '2026-03-10'));
 
         $report->load('reportDays');
         $reportDay = $report->reportDays->first();

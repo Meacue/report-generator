@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Exceptions\ServiceUnavailableException;
 use App\Models\Branch;
 use App\Models\Commit;
@@ -67,7 +68,7 @@ class ErrorHandlingTest extends TestCase
     {
         $this->app->bind(ReportBuilderInterface::class, static function (): ReportBuilderInterface {
             return new class () implements ReportBuilderInterface {
-                public function generate(string $type, string $dateFrom, string $dateTo): Report
+                public function generate(string $type, DateRange $dateRange): Report
                 {
                     throw new ServiceUnavailableException('GitLab');
                 }
@@ -137,7 +138,7 @@ class ErrorHandlingTest extends TestCase
     {
         $this->app->bind(ReportBuilderInterface::class, static function (): ReportBuilderInterface {
             return new class () implements ReportBuilderInterface {
-                public function generate(string $type, string $dateFrom, string $dateTo): Report
+                public function generate(string $type, DateRange $dateRange): Report
                 {
                     throw new ServiceUnavailableException('Bitrix24');
                 }

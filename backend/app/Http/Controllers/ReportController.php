@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\ReportStatus;
 use App\Exceptions\NoDataException;
 use App\Http\Requests\GenerateReportRequest;
 use App\Http\Requests\UpdateNarrativeRequest;
@@ -79,23 +78,21 @@ class ReportController extends Controller
         /** @var array{type: string, date_from: string, date_to: string} $validated */
         $validated = $request->validated();
 
+        $dateRange = $request->toDateRange();
+
         $commitsCount = Commit::query()
-            ->whereBetween('committed_at', [$validated['date_from'] . ' 00:00:00', $validated['date_to'] . ' 23:59:59'])
+            ->whereBetween('committed_at', [$dateRange->from->startOfDay(), $dateRange->to->endOfDay()])
             ->count();
 
         $tasksCount = Task::query()
-            ->whereBetween('status_changed_at', [$validated['date_from'] . ' 00:00:00', $validated['date_to'] . ' 23:59:59'])
+            ->whereBetween('status_changed_at', [$dateRange->from->startOfDay(), $dateRange->to->endOfDay()])
             ->count();
 
         if ($commitsCount === 0 && $tasksCount === 0) {
             throw new NoDataException();
         }
 
-        $report = $this->builder->generate(
-            $validated['type'],
-            $validated['date_from'],
-            $validated['date_to'],
-        );
+        $report = $this->builder->generate($validated['type'], $dateRange);
 
         $this->narrativeService->generateForReport($report);
 
@@ -262,7 +259,7 @@ class ReportController extends Controller
 
         $filePath = $this->exporter->export($reportData);
 
-        $report->update(['status' => ReportStatus::Exported]);
+        $report->markAsExported();
 
         return response()->download($filePath);
     }
