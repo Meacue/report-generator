@@ -18,6 +18,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $error_message
  * @property Carbon $started_at
  * @property Carbon|null $completed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class SyncJob extends Model
 {
@@ -59,6 +61,13 @@ class SyncJob extends Model
         return self::query()
             ->where('status', SyncStatus::InProgress)
             ->exists();
+    }
+
+    public function isStale(int $timeoutMinutes = 10): bool
+    {
+        return $this->status === SyncStatus::InProgress
+            && $this->updated_at !== null
+            && $this->updated_at->diffInMinutes(now()) > $timeoutMinutes;
     }
 
     /**

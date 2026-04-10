@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Enums\ReportStatus;
 use App\Enums\ReportType;
 use Database\Factories\ReportFactory;
@@ -50,6 +51,31 @@ class Report extends Model
     public function reportTasks(): HasMany
     {
         return $this->hasMany(ReportTask::class);
+    }
+
+    public function markAsGenerated(): void
+    {
+        $this->update(['status' => ReportStatus::Generated]);
+    }
+
+    public function markAsExported(): void
+    {
+        $this->update(['status' => ReportStatus::Exported]);
+    }
+
+    public function isEditable(): bool
+    {
+        return $this->status !== ReportStatus::Exported;
+    }
+
+    public function canBeRegenerated(): bool
+    {
+        return in_array($this->status, [ReportStatus::Draft, ReportStatus::Generated]);
+    }
+
+    public function getDateRange(): DateRange
+    {
+        return new DateRange($this->date_from->toDateString(), $this->date_to->toDateString());
     }
 
     protected function casts(): array

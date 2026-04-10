@@ -56,6 +56,24 @@ class ReportDayTask extends Model
         return $this->morphMany(NarrativeHistory::class, 'narratable');
     }
 
+    public function editNarrative(string $newNarrative): void
+    {
+        $this->update([
+            'narrative' => $newNarrative,
+            'is_edited' => true,
+        ]);
+    }
+
+    public function hasNarrative(): bool
+    {
+        return ! empty($this->narrative);
+    }
+
+    public function wasEdited(): bool
+    {
+        return (bool) $this->is_edited;
+    }
+
     protected function casts(): array
     {
         return [
