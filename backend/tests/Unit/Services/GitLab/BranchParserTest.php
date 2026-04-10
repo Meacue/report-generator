@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\GitLab;
 
+use App\Domain\Shared\ValueObjects\TaskNumber;
 use App\Services\GitLab\BranchParser;
 use PHPUnit\Framework\TestCase;
 
@@ -22,7 +23,8 @@ class BranchParserTest extends TestCase
         $this->assertTrue($result->isParsed());
         $this->assertSame('dev', $result->parentBranch);
         $this->assertSame('53642', $result->info);
-        $this->assertSame(53642, $result->parsedTaskNumber);
+        $this->assertInstanceOf(TaskNumber::class, $result->parsedTaskNumber);
+        $this->assertSame('53642', $result->parsedTaskNumber->value);
         $this->assertNotNull($result->parsedDate);
         $this->assertSame('2025-12-23', $result->parsedDate->format('Y-m-d'));
         $this->assertNull($result->parsedTime);

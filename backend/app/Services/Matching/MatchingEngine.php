@@ -19,10 +19,8 @@ final class MatchingEngine implements MatchingEngineInterface
         $parsedTaskNumber = $branch->parsed_task_number;
 
         if ($parsedTaskNumber !== null) {
-            $taskId = (int) $parsedTaskNumber;
-
             /** @var Task|null $task */
-            $task = Task::where('bitrix24_task_id', $taskId)->first();
+            $task = Task::where('bitrix24_task_id', (int) $parsedTaskNumber)->first();
 
             if ($task instanceof Task) {
                 return $this->createOrUpdateMatch($branch, $task, ConfidenceLevel::Auto);

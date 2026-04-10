@@ -62,13 +62,7 @@ final class InboxService implements InboxServiceInterface
             ->where('resolved_by', ResolvedBy::System)
             ->forceDelete();
 
-        MatchResult::create([
-            'branch_id'        => $branch->id,
-            'task_id'          => $taskId,
-            'confidence_level' => ConfidenceLevel::Auto,
-            'resolved_by'      => ResolvedBy::User,
-            'resolved_at'      => now(),
-        ]);
+        MatchResult::createManualMatch($branch->id, $taskId);
     }
 
     /**
@@ -92,13 +86,7 @@ final class InboxService implements InboxServiceInterface
 
         MatchResult::where('branch_id', $branch->id)->forceDelete();
 
-        MatchResult::create([
-            'branch_id'        => $branch->id,
-            'task_id'          => null,
-            'confidence_level' => ConfidenceLevel::None,
-            'resolved_by'      => ResolvedBy::User,
-            'resolved_at'      => now(),
-        ]);
+        MatchResult::createIgnored($branch->id);
     }
 
     public function createTaskAndAssign(int $branchId, string $title): void

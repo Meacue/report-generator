@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace App\Services\Report;
 
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Models\Report;
 
 interface ReportBuilderInterface
 {
     /**
      * Generate a report for a given period.
-     *
-     * @param  string  $type  Report type: daily, weekly, monthly, custom
-     * @param  string  $dateFrom  Start date (Y-m-d)
-     * @param  string  $dateTo  End date (Y-m-d)
      */
-    public function generate(string $type, string $dateFrom, string $dateTo): Report;
+    public function generate(string $type, DateRange $dateRange): Report;
 
     /**
      * Get report preview data with all days and tasks.

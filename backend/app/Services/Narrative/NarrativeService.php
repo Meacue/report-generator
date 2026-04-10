@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Narrative;
 
+use App\Domain\Report\ValueObjects\Narrative;
 use App\DTOs\DayCommitsNarrativeRequest;
 use App\DTOs\DayFallbackRequest;
 use App\DTOs\TaskNarrativeRequest;
@@ -27,8 +28,6 @@ use Throwable;
 
 class NarrativeService implements NarrativeServiceInterface
 {
-    private const string PLACEHOLDER = '[Не удалось сгенерировать описание. Отредактируйте вручную.]';
-
     private const int MAX_HISTORY_ENTRIES = 5;
 
     public function __construct(
@@ -81,7 +80,7 @@ class NarrativeService implements NarrativeServiceInterface
                 'error'          => $e->getMessage(),
             ]);
             $reportTask->update([
-                'narrative' => self::PLACEHOLDER,
+                'narrative' => Narrative::placeholder()->text,
                 'is_edited' => false,
             ]);
         }
@@ -128,7 +127,7 @@ class NarrativeService implements NarrativeServiceInterface
                 'error'         => $e->getMessage(),
             ]);
             $reportDay->update([
-                'narrative' => self::PLACEHOLDER,
+                'narrative' => Narrative::placeholder()->text,
                 'is_edited' => false,
             ]);
         }
@@ -183,7 +182,7 @@ class NarrativeService implements NarrativeServiceInterface
                     $systemPrompt,
                     $previousNarrativesByTask[$reportDayTask->report_task_id] ?? [],
                 );
-                if ($reportDayTask->narrative !== null && $reportDayTask->narrative !== self::PLACEHOLDER) {
+                if ($reportDayTask->narrative !== null && $reportDayTask->narrative !== Narrative::placeholder()->text) {
                     $previousNarrativesByTask[$reportDayTask->report_task_id][] = $reportDayTask->narrative;
                 }
             }
@@ -293,7 +292,7 @@ class NarrativeService implements NarrativeServiceInterface
                 'report_day_id' => $reportDay->id,
                 'error'         => $e->getMessage(),
             ]);
-            $reportDay->update(['narrative' => self::PLACEHOLDER]);
+            $reportDay->update(['narrative' => Narrative::placeholder()->text]);
         }
     }
 
@@ -323,7 +322,7 @@ class NarrativeService implements NarrativeServiceInterface
                 'error'         => $e->getMessage(),
             ]);
             $reportDay->update([
-                'narrative' => self::PLACEHOLDER,
+                'narrative' => Narrative::placeholder()->text,
                 'is_edited' => false,
             ]);
         }
@@ -357,7 +356,7 @@ class NarrativeService implements NarrativeServiceInterface
                 'report_task_id' => $reportTask->id,
                 'error'          => $e->getMessage(),
             ]);
-            $reportTask->update(['narrative' => self::PLACEHOLDER]);
+            $reportTask->update(['narrative' => Narrative::placeholder()->text]);
         }
     }
 
@@ -382,7 +381,7 @@ class NarrativeService implements NarrativeServiceInterface
                 'report_day_id' => $reportDay->id,
                 'error'         => $e->getMessage(),
             ]);
-            $reportDay->update(['narrative' => self::PLACEHOLDER]);
+            $reportDay->update(['narrative' => Narrative::placeholder()->text]);
         }
     }
 

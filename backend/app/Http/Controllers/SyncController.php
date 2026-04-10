@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Enums\SyncStatus;
 use App\Jobs\RunSyncJob;
 use App\Models\SyncJob;
@@ -17,8 +18,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SyncController extends Controller
 {
-    private const int STALE_TIMEOUT_MINUTES = 10;
-
     public function status(): JsonResponse
     {
         /** @var SyncJob|null $runningSyncJob */
@@ -77,20 +76,19 @@ class SyncController extends Controller
             'date_to'   => 'required|date|after_or_equal:date_from',
         ]);
 
+        $dateRange = new DateRange($validated['date_from'], $validated['date_to']);
+
         $syncJob = SyncJob::create([
-            'type'   => 'resync',
-            'status' => SyncStatus::InProgress,
-            'params' => [
-                'date_from' => $validated['date_from'],
-                'date_to'   => $validated['date_to'],
-            ],
+            'type'       => 'resync',
+            'status'     => SyncStatus::InProgress,
+            'params'     => $dateRange->toArray(),
             'started_at' => now(),
         ]);
 
         RunSyncJob::dispatch(
             $syncJob->id,
-            $validated['date_from'],
-            $validated['date_to'],
+            $dateRange->from->toDateString(),
+            $dateRange->to->toDateString(),
         );
 
         return response()->json([
@@ -145,7 +143,7 @@ class SyncController extends Controller
 
     private function failIfStale(SyncJob $syncJob): bool
     {
-        if ($syncJob->started_at->diffInMinutes(now()) <= self::STALE_TIMEOUT_MINUTES) {
+        if (! $syncJob->isStale()) {
             return false;
         }
 

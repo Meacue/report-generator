@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Enums\ReportType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,5 +27,13 @@ class GenerateReportRequest extends FormRequest
             'date_from' => ['required', 'date'],
             'date_to'   => ['required', 'date', 'after_or_equal:date_from'],
         ];
+    }
+
+    public function toDateRange(): DateRange
+    {
+        /** @var array{date_from: string, date_to: string} $validated */
+        $validated = $this->validated();
+
+        return new DateRange($validated['date_from'], $validated['date_to']);
     }
 }
