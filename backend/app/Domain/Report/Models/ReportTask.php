@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Report\Models;
 
+use App\Domain\Bitrix24\Models\Task;
+use App\Domain\Narrative\Models\NarrativeHistory;
 use Database\Factories\ReportTaskFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -84,6 +86,11 @@ class ReportTask extends Model
     public function wasEdited(): bool
     {
         return (bool) $this->is_edited;
+    }
+
+    protected static function newFactory(): ReportTaskFactory
+    {
+        return ReportTaskFactory::new();
     }
 
     protected function casts(): array

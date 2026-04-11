@@ -6,7 +6,7 @@ namespace Database\Factories;
 
 use App\Domain\Sync\Enums\SyncSource;
 use App\Domain\Sync\Enums\SyncStatus;
-use App\Models\SyncLog;
+use App\Domain\Sync\Models\SyncLog;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
 
@@ -15,6 +15,8 @@ use Illuminate\Support\Carbon;
  */
 class SyncLogFactory extends Factory
 {
+    protected $model = SyncLog::class;
+
     /**
      * Define the model's default state.
      *

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Narrative\Models;
 
 use App\Domain\Narrative\Enums\NarrativeSource;
 use Database\Factories\NarrativeHistoryFactory;
@@ -31,6 +31,11 @@ class NarrativeHistory extends Model
     public function narratable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected static function newFactory(): NarrativeHistoryFactory
+    {
+        return NarrativeHistoryFactory::new();
     }
 
     protected function casts(): array

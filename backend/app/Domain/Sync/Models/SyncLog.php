@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Sync\Models;
 
 use App\Domain\Sync\Enums\SyncSource;
 use App\Domain\Sync\Enums\SyncStatus;
@@ -33,6 +33,11 @@ class SyncLog extends Model
         'started_at',
         'completed_at',
     ];
+
+    protected static function newFactory(): SyncLogFactory
+    {
+        return SyncLogFactory::new();
+    }
 
     protected function casts(): array
     {

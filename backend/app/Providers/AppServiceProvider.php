@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Models\ReportDay;
-use App\Models\ReportDayTask;
-use App\Models\ReportTask;
+use App\Domain\Report\Models\ReportDay;
+use App\Domain\Report\Models\ReportDayTask;
+use App\Domain\Report\Models\ReportTask;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 

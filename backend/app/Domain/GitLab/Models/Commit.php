@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\GitLab\Models;
 
 use Database\Factories\CommitFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -46,6 +46,11 @@ class Commit extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    protected static function newFactory(): CommitFactory
+    {
+        return CommitFactory::new();
     }
 
     protected function casts(): array

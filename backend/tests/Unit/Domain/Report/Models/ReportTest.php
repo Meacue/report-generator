@@ -6,7 +6,7 @@ namespace Tests\Unit\Domain\Report\Models;
 
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Report\Enums\ReportStatus;
-use App\Models\Report;
+use App\Domain\Report\Models\Report;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Bitrix24\Models;
 
 use App\Domain\Bitrix24\Enums\TaskStatus;
+use App\Domain\Matching\Models\MatchResult;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -49,6 +50,11 @@ class Task extends Model
     public function matchResults(): HasMany
     {
         return $this->hasMany(MatchResult::class);
+    }
+
+    protected static function newFactory(): TaskFactory
+    {
+        return TaskFactory::new();
     }
 
     protected function casts(): array

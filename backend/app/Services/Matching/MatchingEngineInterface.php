@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Matching;
 
-use App\Models\Branch;
-use App\Models\MatchResult;
+use App\Domain\GitLab\Models\Branch;
+use App\Domain\Matching\Models\MatchResult;
 use Illuminate\Support\Collection;
 
 interface MatchingEngineInterface

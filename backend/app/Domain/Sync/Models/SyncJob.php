@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Sync\Models;
 
 use App\Domain\Sync\Enums\SyncStatus;
 use App\Domain\Sync\Enums\SyncStep;

@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Matching\Models;
 
+use App\Domain\Bitrix24\Models\Task;
+use App\Domain\GitLab\Models\Branch;
 use App\Domain\Matching\Enums\ConfidenceLevel;
 use App\Domain\Matching\Enums\ResolvedBy;
 use Database\Factories\MatchResultFactory;
@@ -91,6 +93,11 @@ class MatchResult extends Model
             'resolved_by'      => ResolvedBy::User,
             'resolved_at'      => now(),
         ]);
+    }
+
+    protected static function newFactory(): MatchResultFactory
+    {
+        return MatchResultFactory::new();
     }
 
     protected function casts(): array

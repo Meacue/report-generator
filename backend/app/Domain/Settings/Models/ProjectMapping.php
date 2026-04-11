@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Settings\Models;
 
 use Database\Factories\ProjectMappingFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +19,11 @@ class ProjectMapping extends Model
         'bitrix24_project_id',
         'bitrix24_project_name',
     ];
+
+    protected static function newFactory(): ProjectMappingFactory
+    {
+        return ProjectMappingFactory::new();
+    }
 
     protected function casts(): array
     {

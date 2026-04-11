@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\GitLab\Models;
 
-use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Matching\Enums\ResolvedBy;
+use App\Domain\Matching\Models\MatchResult;
+use App\Domain\Shared\ValueObjects\DateRange;
 use Database\Factories\BranchFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -102,6 +103,11 @@ class Branch extends Model
         return $this->commits()
             ->whereBetween('committed_at', [$dateRange->from, $dateRange->to])
             ->get();
+    }
+
+    protected static function newFactory(): BranchFactory
+    {
+        return BranchFactory::new();
     }
 
     protected function casts(): array

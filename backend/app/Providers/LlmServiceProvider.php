@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Models\Setting;
+use App\Domain\Settings\Models\Setting;
 use App\Services\LLM\ClaudeProvider;
 use App\Services\LLM\LlmManager;
 use App\Services\LLM\LlmProviderInterface;

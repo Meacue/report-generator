@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Commands;
 
-use App\Models\Branch;
-use App\Models\Commit;
-use App\Models\MatchResult;
-use App\Models\Task;
+use App\Domain\GitLab\Models\Branch;
+use App\Domain\GitLab\Models\Commit;
+use App\Domain\Matching\Models\MatchResult;
+use App\Domain\Bitrix24\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\PendingCommand;
 use Tests\TestCase;

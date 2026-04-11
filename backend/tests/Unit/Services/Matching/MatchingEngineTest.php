@@ -6,9 +6,9 @@ namespace Tests\Unit\Services\Matching;
 
 use App\Domain\Matching\Enums\ConfidenceLevel;
 use App\Domain\Matching\Enums\ResolvedBy;
-use App\Models\Branch;
-use App\Models\MatchResult;
-use App\Models\Task;
+use App\Domain\GitLab\Models\Branch;
+use App\Domain\Matching\Models\MatchResult;
+use App\Domain\Bitrix24\Models\Task;
 use App\Services\Matching\MatchingEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;

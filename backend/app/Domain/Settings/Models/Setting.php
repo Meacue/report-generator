@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Settings\Models;
 
 use App\Domain\Narrative\Enums\LlmProvider;
 use Database\Factories\SettingFactory;
@@ -43,6 +43,11 @@ class Setting extends Model
         'developer_position',
         'sync_schedule_time',
     ];
+
+    protected static function newFactory(): SettingFactory
+    {
+        return SettingFactory::new();
+    }
 
     protected function casts(): array
     {

@@ -7,10 +7,10 @@ namespace Tests\Unit\Domain\Matching\Models;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Matching\Enums\ConfidenceLevel;
 use App\Domain\Matching\Enums\ResolvedBy;
-use App\Models\Branch;
-use App\Models\Commit;
-use App\Models\MatchResult;
-use App\Models\Task;
+use App\Domain\GitLab\Models\Branch;
+use App\Domain\GitLab\Models\Commit;
+use App\Domain\Matching\Models\MatchResult;
+use App\Domain\Bitrix24\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

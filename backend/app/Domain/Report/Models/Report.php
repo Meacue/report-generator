@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Report\Models;
 
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Report\Enums\ReportStatus;
@@ -76,6 +76,11 @@ class Report extends Model
     public function getDateRange(): DateRange
     {
         return new DateRange($this->date_from->toDateString(), $this->date_to->toDateString());
+    }
+
+    protected static function newFactory(): ReportFactory
+    {
+        return ReportFactory::new();
     }
 
     protected function casts(): array

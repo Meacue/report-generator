@@ -6,7 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Narrative\Enums\LlmProvider;
 use App\Http\Requests\UpdateSettingsRequest;
-use App\Models\Setting;
+use App\Domain\Settings\Models\Setting;
 use Illuminate\Http\JsonResponse;
 
 class SettingsController extends Controller

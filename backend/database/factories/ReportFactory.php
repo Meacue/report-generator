@@ -6,7 +6,7 @@ namespace Database\Factories;
 
 use App\Domain\Report\Enums\ReportStatus;
 use App\Domain\Report\Enums\ReportType;
-use App\Models\Report;
+use App\Domain\Report\Models\Report;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
 
@@ -15,6 +15,8 @@ use Illuminate\Support\Carbon;
  */
 class ReportFactory extends Factory
 {
+    protected $model = Report::class;
+
     /**
      * Define the model's default state.
      *

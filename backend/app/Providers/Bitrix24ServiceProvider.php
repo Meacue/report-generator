@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Models\Setting;
+use App\Domain\Settings\Models\Setting;
 use App\Services\Bitrix24\Bitrix24Client;
 use App\Services\Bitrix24\Bitrix24ClientInterface;
 use Illuminate\Support\ServiceProvider;

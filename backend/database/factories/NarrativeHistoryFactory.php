@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Domain\Narrative\Enums\NarrativeSource;
-use App\Models\NarrativeHistory;
-use App\Models\ReportTask;
+use App\Domain\Narrative\Models\NarrativeHistory;
+use App\Domain\Report\Models\ReportTask;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class NarrativeHistoryFactory extends Factory
 {
+    protected $model = NarrativeHistory::class;
+
     /**
      * Define the model's default state.
      *

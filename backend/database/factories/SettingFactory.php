@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Domain\Narrative\Enums\LlmProvider;
-use App\Models\Setting;
+use App\Domain\Settings\Models\Setting;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class SettingFactory extends Factory
 {
+    protected $model = Setting::class;
+
     /**
      * Define the model's default state.
      *

@@ -6,11 +6,11 @@ namespace Tests\Feature\Api;
 
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Exceptions\ServiceUnavailableException;
-use App\Models\Branch;
-use App\Models\Commit;
-use App\Models\MatchResult;
-use App\Models\Report;
-use App\Models\Task;
+use App\Domain\GitLab\Models\Branch;
+use App\Domain\GitLab\Models\Commit;
+use App\Domain\Matching\Models\MatchResult;
+use App\Domain\Report\Models\Report;
+use App\Domain\Bitrix24\Models\Task;
 use App\Services\Narrative\NarrativeService;
 use App\Services\Narrative\NarrativeServiceInterface;
 use App\Services\Report\ReportBuilderInterface;

@@ -6,7 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProjectMappingRequest;
 use App\Http\Requests\UpdateProjectMappingRequest;
-use App\Models\ProjectMapping;
+use App\Domain\Settings\Models\ProjectMapping;
 use Illuminate\Http\JsonResponse;
 
 class ProjectMappingController extends Controller

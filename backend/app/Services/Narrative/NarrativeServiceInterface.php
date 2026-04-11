@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Narrative;
 
-use App\Models\Report;
-use App\Models\ReportDay;
-use App\Models\ReportTask;
+use App\Domain\Report\Models\Report;
+use App\Domain\Report\Models\ReportDay;
+use App\Domain\Report\Models\ReportTask;
 
 interface NarrativeServiceInterface
 {

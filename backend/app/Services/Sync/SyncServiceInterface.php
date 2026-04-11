@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Sync;
 
 use App\Domain\Shared\ValueObjects\DateRange;
-use App\Models\SyncLog;
+use App\Domain\Sync\Models\SyncLog;
 
 interface SyncServiceInterface
 {

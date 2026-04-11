@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Report;
 
-use App\Models\Report;
+use App\Domain\Report\Models\Report;
 
 interface PromptExportServiceInterface
 {

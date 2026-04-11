@@ -2,50 +2,55 @@
 
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Domain\Report\Models;
 
-use Database\Factories\ReportDayTaskFactory;
+use App\Domain\Narrative\Models\NarrativeHistory;
+use App\Domain\Report\Enums\ReportDaySource;
+use Database\Factories\ReportDayFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property int $report_day_id
- * @property int $report_task_id
+ * @property int $report_id
+ * @property Carbon $date
  * @property string|null $narrative
+ * @property ReportDaySource $source
  * @property bool $is_edited
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-class ReportDayTask extends Model
+class ReportDay extends Model
 {
-    /** @use HasFactory<ReportDayTaskFactory> */
+    /** @use HasFactory<ReportDayFactory> */
     use HasFactory;
 
     protected $fillable = [
-        'report_day_id',
-        'report_task_id',
+        'report_id',
+        'date',
         'narrative',
+        'source',
         'is_edited',
     ];
 
     /**
-     * @return BelongsTo<ReportDay, $this>
+     * @return BelongsTo<Report, $this>
      */
-    public function reportDay(): BelongsTo
+    public function report(): BelongsTo
     {
-        return $this->belongsTo(ReportDay::class);
+        return $this->belongsTo(Report::class);
     }
 
     /**
-     * @return BelongsTo<ReportTask, $this>
+     * @return HasMany<ReportDayTask, $this>
      */
-    public function reportTask(): BelongsTo
+    public function reportDayTasks(): HasMany
     {
-        return $this->belongsTo(ReportTask::class);
+        return $this->hasMany(ReportDayTask::class);
     }
 
     /**
@@ -74,12 +79,18 @@ class ReportDayTask extends Model
         return (bool) $this->is_edited;
     }
 
+    protected static function newFactory(): ReportDayFactory
+    {
+        return ReportDayFactory::new();
+    }
+
     protected function casts(): array
     {
         return [
-            'report_day_id'  => 'integer',
-            'report_task_id' => 'integer',
-            'is_edited'      => 'boolean',
+            'report_id' => 'integer',
+            'date'      => 'date',
+            'source'    => ReportDaySource::class,
+            'is_edited' => 'boolean',
         ];
     }
 }
