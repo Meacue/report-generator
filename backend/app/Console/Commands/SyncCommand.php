@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Enums\SyncStatus;
+use App\Domain\Sync\Enums\SyncStatus;
 use App\Services\Sync\SyncServiceInterface;
 use Illuminate\Console\Command;
 

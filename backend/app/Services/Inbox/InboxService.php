@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Inbox;
 
-use App\Enums\ConfidenceLevel;
-use App\Enums\ResolvedBy;
-use App\Enums\TaskStatus;
+use App\Domain\Matching\Enums\ConfidenceLevel;
+use App\Domain\Matching\Enums\ResolvedBy;
+use App\Domain\Bitrix24\Enums\TaskStatus;
 use App\Models\Branch;
 use App\Models\MatchResult;
 use App\Models\Task;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Domain\Shared\ValueObjects\DateRange;
-use App\Enums\SyncStatus;
+use App\Domain\Sync\Enums\SyncStatus;
 use App\Jobs\RunSyncJob;
 use App\Models\SyncJob;
 use App\Models\SyncLog;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\NarrativeSource;
+use App\Domain\Narrative\Enums\NarrativeSource;
 use Database\Factories\NarrativeHistoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

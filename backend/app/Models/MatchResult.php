@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\ConfidenceLevel;
-use App\Enums\ResolvedBy;
+use App\Domain\Matching\Enums\ConfidenceLevel;
+use App\Domain\Matching\Enums\ResolvedBy;
 use Database\Factories\MatchResultFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

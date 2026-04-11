@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\SyncStatus;
-use App\Enums\SyncStep;
+use App\Domain\Sync\Enums\SyncStatus;
+use App\Domain\Sync\Enums\SyncStep;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 

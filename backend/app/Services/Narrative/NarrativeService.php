@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Services\Narrative;
 
 use App\Domain\Report\ValueObjects\Narrative;
-use App\DTOs\DayCommitsNarrativeRequest;
-use App\DTOs\DayFallbackRequest;
-use App\DTOs\TaskNarrativeRequest;
-use App\Enums\NarrativeSource;
-use App\Enums\ReportDaySource;
-use App\Enums\ReportStatus;
+use App\Domain\Narrative\DTOs\DayCommitsNarrativeRequest;
+use App\Domain\Narrative\DTOs\DayFallbackRequest;
+use App\Domain\Narrative\DTOs\TaskNarrativeRequest;
+use App\Domain\Narrative\Enums\NarrativeSource;
+use App\Domain\Report\Enums\ReportDaySource;
+use App\Domain\Report\Enums\ReportStatus;
 use App\Models\Branch;
 use App\Models\Commit;
 use App\Models\MatchResult;

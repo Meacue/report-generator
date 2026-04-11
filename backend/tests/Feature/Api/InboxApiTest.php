@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
-use App\Enums\ConfidenceLevel;
-use App\Enums\ResolvedBy;
+use App\Domain\Matching\Enums\ConfidenceLevel;
+use App\Domain\Matching\Enums\ResolvedBy;
 use App\Models\Branch;
 use App\Models\Commit;
 use App\Models\MatchResult;

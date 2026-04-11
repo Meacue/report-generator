@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\GitLab;
 
 use App\Domain\Shared\ValueObjects\TaskNumber;
-use App\DTOs\ParsedBranch;
+use App\Domain\GitLab\DTOs\ParsedBranch;
 use Carbon\Carbon;
 
 class BranchParser

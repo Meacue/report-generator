@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Enums\LlmProvider;
+use App\Domain\Narrative\Enums\LlmProvider;
 use App\Models\Setting;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\SyncSource;
-use App\Enums\SyncStatus;
+use App\Domain\Sync\Enums\SyncSource;
+use App\Domain\Sync\Enums\SyncStatus;
 use Database\Factories\SyncLogFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

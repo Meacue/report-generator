@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Domain\Shared\ValueObjects\DateRange;
-use App\Enums\ResolvedBy;
+use App\Domain\Matching\Enums\ResolvedBy;
 use Database\Factories\BranchFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

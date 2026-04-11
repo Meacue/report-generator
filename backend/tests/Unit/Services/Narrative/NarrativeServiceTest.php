@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Narrative;
 
-use App\Enums\NarrativeSource;
-use App\Enums\ReportStatus;
+use App\Domain\Narrative\Enums\NarrativeSource;
+use App\Domain\Report\Enums\ReportStatus;
 use App\Models\Branch;
 use App\Models\Commit;
 use App\Models\MatchResult;

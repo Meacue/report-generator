@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\DTOs;
+namespace App\Domain\GitLab\DTOs;
 
 use App\Domain\Shared\ValueObjects\TaskNumber;
 use Carbon\Carbon;

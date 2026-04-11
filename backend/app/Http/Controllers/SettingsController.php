@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\LlmProvider;
+use App\Domain\Narrative\Enums\LlmProvider;
 use App\Http\Requests\UpdateSettingsRequest;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;

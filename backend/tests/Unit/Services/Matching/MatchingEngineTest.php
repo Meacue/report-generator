@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Matching;
 
-use App\Enums\ConfidenceLevel;
-use App\Enums\ResolvedBy;
+use App\Domain\Matching\Enums\ConfidenceLevel;
+use App\Domain\Matching\Enums\ResolvedBy;
 use App\Models\Branch;
 use App\Models\MatchResult;
 use App\Models\Task;

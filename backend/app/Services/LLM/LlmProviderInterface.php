@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\LLM;
 
-use App\DTOs\DayCommitsNarrativeRequest;
-use App\DTOs\DayFallbackRequest;
-use App\DTOs\DayFallbackResponse;
-use App\DTOs\TaskNarrativeRequest;
-use App\DTOs\TaskNarrativeResponse;
+use App\Domain\Narrative\DTOs\DayCommitsNarrativeRequest;
+use App\Domain\Narrative\DTOs\DayFallbackRequest;
+use App\Domain\Narrative\DTOs\DayFallbackResponse;
+use App\Domain\Narrative\DTOs\TaskNarrativeRequest;
+use App\Domain\Narrative\DTOs\TaskNarrativeResponse;
 
 interface LlmProviderInterface
 {

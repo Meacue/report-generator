@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Domain\Shared\ValueObjects\DateRange;
-use App\Enums\ReportStatus;
-use App\Enums\ReportType;
+use App\Domain\Report\Enums\ReportStatus;
+use App\Domain\Report\Enums\ReportType;
 use Database\Factories\ReportFactory;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

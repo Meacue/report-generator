@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Report;
 
-use App\Enums\ReportDaySource;
-use App\Enums\ReportType;
+use App\Domain\Report\Enums\ReportDaySource;
+use App\Domain\Report\Enums\ReportType;
 use App\Models\Commit;
 use App\Models\MatchResult;
 use App\Models\Report;

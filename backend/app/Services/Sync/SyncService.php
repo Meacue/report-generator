@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Sync;
 
 use App\Domain\Shared\ValueObjects\DateRange;
-use App\Enums\SyncSource;
-use App\Enums\SyncStatus;
-use App\Enums\TaskStatus;
+use App\Domain\Sync\Enums\SyncSource;
+use App\Domain\Sync\Enums\SyncStatus;
+use App\Domain\Bitrix24\Enums\TaskStatus;
 use App\Models\Branch;
 use App\Models\Commit;
 use App\Models\ProjectMapping;

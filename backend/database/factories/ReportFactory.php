@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Enums\ReportStatus;
-use App\Enums\ReportType;
+use App\Domain\Report\Enums\ReportStatus;
+use App\Domain\Report\Enums\ReportType;
 use App\Models\Report;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Carbon;
