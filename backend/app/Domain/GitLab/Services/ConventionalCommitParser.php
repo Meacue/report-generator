@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Sync;
+namespace App\Domain\GitLab\Services;
 
 class ConventionalCommitParser
 {

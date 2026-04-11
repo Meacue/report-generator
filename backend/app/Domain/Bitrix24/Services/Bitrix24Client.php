@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Bitrix24;
+namespace App\Domain\Bitrix24\Services;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;

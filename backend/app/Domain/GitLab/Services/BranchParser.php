@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\GitLab;
+namespace App\Domain\GitLab\Services;
 
 use App\Domain\Shared\ValueObjects\TaskNumber;
 use App\Domain\GitLab\DTOs\ParsedBranch;

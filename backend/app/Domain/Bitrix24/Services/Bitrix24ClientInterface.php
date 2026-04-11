@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Bitrix24;
+namespace App\Domain\Bitrix24\Services;
 
 interface Bitrix24ClientInterface
 {
