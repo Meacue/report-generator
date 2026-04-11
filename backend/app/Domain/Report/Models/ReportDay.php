@@ -28,6 +28,7 @@ class ReportDay extends Model
 {
     /** @use HasFactory<ReportDayFactory> */
     use HasFactory;
+    public const string MORPH_ALIAS = 'report_day';
 
     protected $fillable = [
         'report_id',

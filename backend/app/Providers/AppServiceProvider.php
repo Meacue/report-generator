@@ -20,9 +20,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Relation::enforceMorphMap([
-            'report_task'     => ReportTask::class,
-            'report_day'      => ReportDay::class,
-            'report_day_task' => ReportDayTask::class,
+            ReportTask::MORPH_ALIAS    => ReportTask::class,
+            ReportDay::MORPH_ALIAS     => ReportDay::class,
+            ReportDayTask::MORPH_ALIAS => ReportDayTask::class,
         ]);
     }
 }
