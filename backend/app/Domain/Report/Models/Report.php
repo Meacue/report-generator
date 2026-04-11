@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Report\Models;
 
 use App\Domain\Shared\ValueObjects\DateRange;
+use App\Domain\Report\Enums\ReportDaySource;
 use App\Domain\Report\Enums\ReportStatus;
 use App\Domain\Report\Enums\ReportType;
 use Database\Factories\ReportFactory;
@@ -76,6 +77,43 @@ class Report extends Model
     public function getDateRange(): DateRange
     {
         return new DateRange($this->date_from->toDateString(), $this->date_to->toDateString());
+    }
+
+    public function addDay(string $date, ReportDaySource $source, ?string $narrative = null): ReportDay
+    {
+        return $this->reportDays()->create([
+            'date'      => $date,
+            'source'    => $source,
+            'narrative' => $narrative,
+            'is_edited' => false,
+        ]);
+    }
+
+    public function addTask(int $taskId, ?string $projectName = null): ReportTask
+    {
+        return $this->reportTasks()->create([
+            'task_id'      => $taskId,
+            'narrative'    => null,
+            'project_name' => $projectName,
+            'is_edited'    => false,
+        ]);
+    }
+
+    public function findDay(string $date): ?ReportDay
+    {
+        return $this->reportDays()->whereDate('date', $date)->first();
+    }
+
+    public function findTask(int $taskId): ?ReportTask
+    {
+        return $this->reportTasks()->where('task_id', $taskId)->first();
+    }
+
+    public function guardExportable(): void
+    {
+        if ($this->status === ReportStatus::Draft) {
+            throw new \DomainException('Cannot export a draft report. Generate narratives first.');
+        }
     }
 
     protected static function newFactory(): ReportFactory
