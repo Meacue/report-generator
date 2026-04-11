@@ -4,31 +4,30 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Bitrix24\Models\Task;
+use App\Domain\GitLab\Models\Branch;
+use App\Domain\Inbox\Actions\AssignBranch;
+use App\Domain\Inbox\Actions\BulkAssignBranches;
+use App\Domain\Inbox\Actions\CreateTaskAndAssign;
+use App\Domain\Inbox\Actions\IgnoreBranch;
+use App\Domain\Inbox\Queries\GetUnlinkedBranches;
 use App\Http\Requests\Inbox\AssignRequest;
 use App\Http\Requests\Inbox\BulkAssignRequest;
 use App\Http\Requests\Inbox\CreateTaskRequest;
 use App\Http\Requests\Inbox\IgnoreRequest;
-use App\Domain\GitLab\Models\Branch;
-use App\Domain\Bitrix24\Models\Task;
-use App\Services\Inbox\InboxServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class InboxController extends Controller
 {
-    public function __construct(
-        private readonly InboxServiceInterface $inboxService,
-    ) {
-    }
-
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, GetUnlinkedBranches $getUnlinkedBranches): JsonResponse
     {
         $perPage = (int) $request->query('per_page', '20');
         $filter = $request->query('filter');
         $sortDirection = $request->query('sort_direction', 'desc');
 
-        $branches = $this->inboxService->getUnlinkedBranches(
+        $branches = $getUnlinkedBranches(
             $perPage,
             is_string($filter) ? $filter : null,
             is_string($sortDirection) ? $sortDirection : 'desc',
@@ -68,19 +67,19 @@ class InboxController extends Controller
         ]);
     }
 
-    public function assign(AssignRequest $request): JsonResponse
+    public function assign(AssignRequest $request, AssignBranch $assignBranch): JsonResponse
     {
         /** @var array{branch_id: int, task_id: int} $validated */
         $validated = $request->validated();
 
         $task = Task::where('bitrix24_task_id', $validated['task_id'])->firstOrFail();
 
-        $this->inboxService->assign($validated['branch_id'], $task->id);
+        $assignBranch($validated['branch_id'], $task->id);
 
         return response()->json(['message' => 'Assigned']);
     }
 
-    public function bulkAssign(BulkAssignRequest $request): JsonResponse
+    public function bulkAssign(BulkAssignRequest $request, BulkAssignBranches $bulkAssignBranches): JsonResponse
     {
         /** @var array{assignments: array<int, array{branch_id: int, task_id: int}>} $validated */
         $validated = $request->validated();
@@ -94,27 +93,27 @@ class InboxController extends Controller
             ];
         }, $validated['assignments']);
 
-        $this->inboxService->bulkAssign($resolved);
+        $bulkAssignBranches($resolved);
 
         return response()->json(['message' => 'Bulk assigned']);
     }
 
-    public function ignore(IgnoreRequest $request): JsonResponse
+    public function ignore(IgnoreRequest $request, IgnoreBranch $ignoreBranch): JsonResponse
     {
         /** @var array{branch_id: int} $validated */
         $validated = $request->validated();
 
-        $this->inboxService->ignore($validated['branch_id']);
+        $ignoreBranch($validated['branch_id']);
 
         return response()->json(['message' => 'Ignored']);
     }
 
-    public function createTask(CreateTaskRequest $request): JsonResponse
+    public function createTask(CreateTaskRequest $request, CreateTaskAndAssign $createTaskAndAssign): JsonResponse
     {
         /** @var array{branch_id: int, title: string} $validated */
         $validated = $request->validated();
 
-        $this->inboxService->createTaskAndAssign(
+        $createTaskAndAssign(
             $validated['branch_id'],
             $validated['title'],
         );

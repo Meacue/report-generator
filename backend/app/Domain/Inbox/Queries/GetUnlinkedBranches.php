@@ -2,26 +2,22 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Inbox;
+namespace App\Domain\Inbox\Queries;
 
+use App\Domain\GitLab\Models\Branch;
 use App\Domain\Matching\Enums\ConfidenceLevel;
 use App\Domain\Matching\Enums\ResolvedBy;
-use App\Domain\Bitrix24\Enums\TaskStatus;
-use App\Domain\GitLab\Models\Branch;
-use App\Domain\Matching\Models\MatchResult;
-use App\Domain\Bitrix24\Models\Task;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Facades\DB;
 
-final class InboxService implements InboxServiceInterface
+final readonly class GetUnlinkedBranches
 {
     /**
      * @param  string|null  $filter  Filter: 'all', 'probable', 'none'
      * @return LengthAwarePaginator<int, Branch>
      */
-    public function getUnlinkedBranches(int $perPage = 20, ?string $filter = null, string $sortDirection = 'desc'): LengthAwarePaginator
+    public function __invoke(int $perPage = 20, ?string $filter = null, string $sortDirection = 'desc'): LengthAwarePaginator
     {
         $sortDirection = in_array($sortDirection, ['asc', 'desc'], true) ? $sortDirection : 'desc';
 
@@ -53,60 +49,7 @@ final class InboxService implements InboxServiceInterface
             ->paginate($perPage);
     }
 
-    public function assign(int $branchId, int $taskId): void
-    {
-        $branch = Branch::findOrFail($branchId);
-        Task::findOrFail($taskId);
-
-        MatchResult::where('branch_id', $branch->id)
-            ->where('resolved_by', ResolvedBy::System)
-            ->forceDelete();
-
-        MatchResult::createManualMatch($branch->id, $taskId);
-    }
-
     /**
-     * @param  array<int, array{branch_id: int, task_id: int}>  $assignments
-     */
-    public function bulkAssign(array $assignments): void
-    {
-        DB::transaction(function () use ($assignments): void {
-            foreach ($assignments as $assignment) {
-                $this->assign(
-                    (int) $assignment['branch_id'],
-                    (int) $assignment['task_id'],
-                );
-            }
-        });
-    }
-
-    public function ignore(int $branchId): void
-    {
-        $branch = Branch::findOrFail($branchId);
-
-        MatchResult::where('branch_id', $branch->id)->forceDelete();
-
-        MatchResult::createIgnored($branch->id);
-    }
-
-    public function createTaskAndAssign(int $branchId, string $title): void
-    {
-        DB::transaction(function () use ($branchId, $title): void {
-            $task = Task::create([
-                'bitrix24_task_id' => 0,
-                'title'            => $title,
-                'status'           => TaskStatus::Completed,
-                'project_name'     => 'Internal',
-            ]);
-
-            $this->assign($branchId, $task->id);
-        });
-    }
-
-    /**
-     * Filter branches that have no match or a non-confirmed match (none/probable),
-     * excluding branches manually confirmed by user.
-     *
      * @param  Builder<Branch>  $query
      */
     private function filterAllUnlinkedBranches(Builder $query): void
