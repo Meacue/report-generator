@@ -22,7 +22,7 @@ class NarrativeHistoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'narratable_type'    => ReportTask::class,
+            'narratable_type'    => 'report_task',
             'narratable_id'      => ReportTask::factory(),
             'previous_narrative' => fake()->paragraph(2),
             'changed_at'         => fake()->dateTimeBetween('-1 month', 'now'),
