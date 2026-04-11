@@ -11,8 +11,7 @@ use App\Domain\GitLab\Models\Commit;
 use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Models\Report;
 use App\Domain\Bitrix24\Models\Task;
-use App\Services\Narrative\NarrativeService;
-use App\Services\Narrative\NarrativeServiceInterface;
+use App\Services\LLM\LlmProviderInterface;
 use App\Services\Report\ReportBuilderInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Mocks\MockLlmProvider;
@@ -226,8 +225,6 @@ class ErrorHandlingTest extends TestCase
         parent::setUp();
 
         $mockLlm = new MockLlmProvider();
-        $this->app->bind(NarrativeServiceInterface::class, static function () use ($mockLlm): NarrativeService {
-            return new NarrativeService($mockLlm);
-        });
+        $this->app->instance(LlmProviderInterface::class, $mockLlm);
     }
 }
