@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
-use App\Models\ProjectMapping;
+use App\Domain\Settings\Models\ProjectMapping;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

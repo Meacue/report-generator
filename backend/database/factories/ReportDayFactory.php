@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Enums\ReportDaySource;
-use App\Models\Report;
-use App\Models\ReportDay;
+use App\Domain\Report\Enums\ReportDaySource;
+use App\Domain\Report\Models\Report;
+use App\Domain\Report\Models\ReportDay;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ReportDayFactory extends Factory
 {
+    protected $model = ReportDay::class;
+
     /**
      * Define the model's default state.
      *

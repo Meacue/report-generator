@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Report;
 
-use App\Models\Branch;
-use App\Models\Commit;
-use App\Models\MatchResult;
-use App\Models\Report;
-use App\Models\ReportTask;
-use App\Models\Setting;
-use App\Models\Task;
+use App\Domain\GitLab\Models\Branch;
+use App\Domain\GitLab\Models\Commit;
+use App\Domain\Matching\Models\MatchResult;
+use App\Domain\Report\Models\Report;
+use App\Domain\Report\Models\ReportTask;
+use App\Domain\Settings\Models\Setting;
+use App\Domain\Bitrix24\Models\Task;
 use App\Services\Narrative\NarrativeService;
 use App\Services\Narrative\NarrativeServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;

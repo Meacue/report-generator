@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\Branch;
-use App\Models\Commit;
+use App\Domain\GitLab\Models\Branch;
+use App\Domain\GitLab\Models\Commit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class CommitFactory extends Factory
 {
+    protected $model = Commit::class;
+
     /**
      * Define the model's default state.
      *

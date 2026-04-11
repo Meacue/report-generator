@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Bitrix24;
 
-use App\Services\Bitrix24\Bitrix24Client;
+use App\Domain\Bitrix24\Services\Bitrix24Client;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;

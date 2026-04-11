@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Narrative;
 
-use App\Enums\NarrativeSource;
-use App\Enums\ReportStatus;
-use App\Models\Branch;
-use App\Models\Commit;
-use App\Models\MatchResult;
-use App\Models\NarrativeHistory;
-use App\Models\Report;
-use App\Models\ReportDay;
-use App\Models\ReportDayTask;
-use App\Models\ReportTask;
-use App\Models\Task;
+use App\Domain\Narrative\Enums\NarrativeSource;
+use App\Domain\Report\Enums\ReportStatus;
+use App\Domain\GitLab\Models\Branch;
+use App\Domain\GitLab\Models\Commit;
+use App\Domain\Matching\Models\MatchResult;
+use App\Domain\Narrative\Models\NarrativeHistory;
+use App\Domain\Report\Models\Report;
+use App\Domain\Report\Models\ReportDay;
+use App\Domain\Report\Models\ReportDayTask;
+use App\Domain\Report\Models\ReportTask;
+use App\Domain\Bitrix24\Models\Task;
 use App\Services\Narrative\NarrativeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Mocks\MockLlmProvider;
@@ -106,7 +106,7 @@ final class NarrativeServiceTest extends TestCase
         $this->service->regenerateTask($reportTask);
 
         $this->assertDatabaseHas('narrative_history', [
-            'narratable_type'    => ReportTask::class,
+            'narratable_type'    => ReportTask::MORPH_ALIAS,
             'narratable_id'      => $reportTask->id,
             'previous_narrative' => $previousNarrative,
             'source'             => NarrativeSource::LlmRegeneration->value,
@@ -139,7 +139,7 @@ final class NarrativeServiceTest extends TestCase
         $this->service->regenerateDay($reportDay);
 
         $this->assertDatabaseHas('narrative_history', [
-            'narratable_type'    => ReportDay::class,
+            'narratable_type'    => ReportDay::MORPH_ALIAS,
             'narratable_id'      => $reportDay->id,
             'previous_narrative' => $previousNarrative,
             'source'             => NarrativeSource::LlmRegeneration->value,
@@ -172,7 +172,7 @@ final class NarrativeServiceTest extends TestCase
         $this->service->editTaskNarrative($reportTask, 'New manual narrative.');
 
         $this->assertDatabaseHas('narrative_history', [
-            'narratable_type'    => ReportTask::class,
+            'narratable_type'    => ReportTask::MORPH_ALIAS,
             'narratable_id'      => $reportTask->id,
             'previous_narrative' => $oldNarrative,
             'source'             => NarrativeSource::ManualEdit->value,
@@ -206,7 +206,7 @@ final class NarrativeServiceTest extends TestCase
         $this->service->editDayNarrative($reportDay, 'New manual day narrative.');
 
         $this->assertDatabaseHas('narrative_history', [
-            'narratable_type'    => ReportDay::class,
+            'narratable_type'    => ReportDay::MORPH_ALIAS,
             'narratable_id'      => $reportDay->id,
             'previous_narrative' => $oldNarrative,
             'source'             => NarrativeSource::ManualEdit->value,
@@ -228,7 +228,7 @@ final class NarrativeServiceTest extends TestCase
         $reportTask = ReportTask::factory()->create(['narrative' => 'Current narrative.']);
 
         NarrativeHistory::factory()->create([
-            'narratable_type'    => ReportTask::class,
+            'narratable_type'    => ReportTask::MORPH_ALIAS,
             'narratable_id'      => $reportTask->id,
             'previous_narrative' => $previousNarrative,
             'changed_at'         => now(),
@@ -246,7 +246,7 @@ final class NarrativeServiceTest extends TestCase
         $reportTask = ReportTask::factory()->create();
 
         $historyEntry = NarrativeHistory::factory()->create([
-            'narratable_type' => ReportTask::class,
+            'narratable_type' => ReportTask::MORPH_ALIAS,
             'narratable_id'   => $reportTask->id,
             'changed_at'      => now(),
         ]);
@@ -271,7 +271,7 @@ final class NarrativeServiceTest extends TestCase
         $reportDay = ReportDay::factory()->fromCommits()->create(['narrative' => 'Current day narrative.']);
 
         NarrativeHistory::factory()->create([
-            'narratable_type'    => ReportDay::class,
+            'narratable_type'    => ReportDay::MORPH_ALIAS,
             'narratable_id'      => $reportDay->id,
             'previous_narrative' => $previousNarrative,
             'changed_at'         => now(),
@@ -300,7 +300,7 @@ final class NarrativeServiceTest extends TestCase
         // Create 5 history entries directly (simulating 5 prior edits).
         for ($i = 1; $i <= 5; $i++) {
             NarrativeHistory::factory()->create([
-                'narratable_type'    => ReportTask::class,
+                'narratable_type'    => ReportTask::MORPH_ALIAS,
                 'narratable_id'      => $reportTask->id,
                 'previous_narrative' => "Narrative v{$i}.",
                 'changed_at'         => now()->subMinutes(6 - $i),
@@ -312,7 +312,7 @@ final class NarrativeServiceTest extends TestCase
         $this->service->editTaskNarrative($reportTask, 'Narrative v6.');
 
         $count = NarrativeHistory::query()
-            ->where('narratable_type', ReportTask::class)
+            ->where('narratable_type', ReportTask::MORPH_ALIAS)
             ->where('narratable_id', $reportTask->id)
             ->count();
 
@@ -324,7 +324,7 @@ final class NarrativeServiceTest extends TestCase
         $reportTask = ReportTask::factory()->create(['narrative' => 'Narrative v0.']);
 
         $oldest = NarrativeHistory::factory()->create([
-            'narratable_type'    => ReportTask::class,
+            'narratable_type'    => ReportTask::MORPH_ALIAS,
             'narratable_id'      => $reportTask->id,
             'previous_narrative' => 'Oldest narrative.',
             'changed_at'         => now()->subHour(),
@@ -334,7 +334,7 @@ final class NarrativeServiceTest extends TestCase
         // Fill up to 5 entries total (oldest is already 1, add 4 more recent ones).
         for ($i = 1; $i <= 4; $i++) {
             NarrativeHistory::factory()->create([
-                'narratable_type'    => ReportTask::class,
+                'narratable_type'    => ReportTask::MORPH_ALIAS,
                 'narratable_id'      => $reportTask->id,
                 'previous_narrative' => "Narrative v{$i}.",
                 'changed_at'         => now()->subMinutes(5 - $i),
@@ -405,7 +405,7 @@ final class NarrativeServiceTest extends TestCase
         $reportTask = ReportTask::factory()->create(['narrative' => 'Current.']);
 
         NarrativeHistory::factory()->create([
-            'narratable_type'    => ReportTask::class,
+            'narratable_type'    => ReportTask::MORPH_ALIAS,
             'narratable_id'      => $reportTask->id,
             'previous_narrative' => 'Older narrative.',
             'changed_at'         => now()->subMinutes(10),
@@ -413,7 +413,7 @@ final class NarrativeServiceTest extends TestCase
         ]);
 
         NarrativeHistory::factory()->create([
-            'narratable_type'    => ReportTask::class,
+            'narratable_type'    => ReportTask::MORPH_ALIAS,
             'narratable_id'      => $reportTask->id,
             'previous_narrative' => 'Most recent narrative.',
             'changed_at'         => now()->subMinutes(1),

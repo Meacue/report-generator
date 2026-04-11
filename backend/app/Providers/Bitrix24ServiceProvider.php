@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Models\Setting;
-use App\Services\Bitrix24\Bitrix24Client;
-use App\Services\Bitrix24\Bitrix24ClientInterface;
+use App\Domain\Settings\Models\Setting;
+use App\Domain\Bitrix24\Services\Bitrix24Client;
+use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
 use Illuminate\Support\ServiceProvider;
 
 class Bitrix24ServiceProvider extends ServiceProvider

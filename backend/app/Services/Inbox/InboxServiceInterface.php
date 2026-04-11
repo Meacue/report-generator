@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Inbox;
 
-use App\Models\Branch;
+use App\Domain\GitLab\Models\Branch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface InboxServiceInterface

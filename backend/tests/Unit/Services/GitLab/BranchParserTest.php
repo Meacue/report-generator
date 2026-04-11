@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\GitLab;
 
 use App\Domain\Shared\ValueObjects\TaskNumber;
-use App\Services\GitLab\BranchParser;
+use App\Domain\GitLab\Services\BranchParser;
 use PHPUnit\Framework\TestCase;
 
 class BranchParserTest extends TestCase

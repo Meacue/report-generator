@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Models\Setting;
-use App\Services\GitLab\GitLabClient;
-use App\Services\GitLab\GitLabClientInterface;
+use App\Domain\Settings\Models\Setting;
+use App\Domain\GitLab\Services\GitLabClient;
+use App\Domain\GitLab\Services\GitLabClientInterface;
 use Illuminate\Support\ServiceProvider;
 
 final class GitLabServiceProvider extends ServiceProvider

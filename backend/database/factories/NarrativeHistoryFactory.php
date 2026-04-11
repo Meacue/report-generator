@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Enums\NarrativeSource;
-use App\Models\NarrativeHistory;
-use App\Models\ReportTask;
+use App\Domain\Narrative\Enums\NarrativeSource;
+use App\Domain\Narrative\Models\NarrativeHistory;
+use App\Domain\Report\Models\ReportTask;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class NarrativeHistoryFactory extends Factory
 {
+    protected $model = NarrativeHistory::class;
+
     /**
      * Define the model's default state.
      *
@@ -22,7 +24,7 @@ class NarrativeHistoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'narratable_type'    => ReportTask::class,
+            'narratable_type'    => ReportTask::MORPH_ALIAS,
             'narratable_id'      => ReportTask::factory(),
             'previous_narrative' => fake()->paragraph(2),
             'changed_at'         => fake()->dateTimeBetween('-1 month', 'now'),

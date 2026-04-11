@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Services\Report;
 
 use App\Domain\Shared\ValueObjects\DateRange;
-use App\Enums\ReportDaySource;
-use App\Enums\ReportStatus;
-use App\Enums\ReportType;
-use App\Models\Commit;
-use App\Models\MatchResult;
-use App\Models\Report;
-use App\Models\ReportDay;
-use App\Models\ReportDayTask;
-use App\Models\ReportTask;
-use App\Models\Task;
+use App\Domain\Report\Enums\ReportDaySource;
+use App\Domain\Report\Enums\ReportStatus;
+use App\Domain\Report\Enums\ReportType;
+use App\Domain\GitLab\Models\Commit;
+use App\Domain\Matching\Models\MatchResult;
+use App\Domain\Report\Models\Report;
+use App\Domain\Report\Models\ReportDay;
+use App\Domain\Report\Models\ReportDayTask;
+use App\Domain\Report\Models\ReportTask;
+use App\Domain\Bitrix24\Models\Task;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 

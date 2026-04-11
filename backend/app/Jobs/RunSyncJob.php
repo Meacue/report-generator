@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Enums\SyncStatus;
-use App\Enums\SyncStep;
-use App\Models\SyncJob;
+use App\Domain\Sync\Enums\SyncStatus;
+use App\Domain\Sync\Enums\SyncStep;
+use App\Domain\Sync\Models\SyncJob;
 use App\Services\Matching\MatchingEngineInterface;
 use App\Services\Sync\SyncServiceInterface;
 use Illuminate\Bus\Queueable;
