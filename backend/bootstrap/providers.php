@@ -7,7 +7,6 @@ use App\Providers\InboxServiceProvider;
 use App\Providers\LlmServiceProvider;
 use App\Providers\NarrativeServiceProvider;
 use App\Providers\ReportServiceProvider;
-use App\Providers\SyncServiceProvider;
 
 return [
     AppServiceProvider::class,
@@ -17,5 +16,4 @@ return [
     LlmServiceProvider::class,
     NarrativeServiceProvider::class,
     ReportServiceProvider::class,
-    SyncServiceProvider::class,
 ];

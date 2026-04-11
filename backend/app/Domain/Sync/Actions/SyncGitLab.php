@@ -2,62 +2,46 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Sync;
+namespace App\Domain\Sync\Actions;
 
-use App\Domain\Shared\ValueObjects\DateRange;
-use App\Domain\Sync\Enums\SyncSource;
-use App\Domain\Sync\Enums\SyncStatus;
-use App\Domain\Bitrix24\Enums\TaskStatus;
 use App\Domain\GitLab\Models\Branch;
 use App\Domain\GitLab\Models\Commit;
+use App\Domain\GitLab\Services\BranchParser;
+use App\Domain\GitLab\Services\ConventionalCommitParser;
+use App\Domain\GitLab\Services\GitLabClientInterface;
 use App\Domain\Settings\Models\ProjectMapping;
 use App\Domain\Settings\Models\Setting;
-use App\Domain\GitLab\Services\ConventionalCommitParser;
+use App\Domain\Sync\Enums\SyncSource;
+use App\Domain\Sync\Enums\SyncStatus;
 use App\Domain\Sync\Models\SyncLog;
-use App\Domain\Bitrix24\Models\Task;
-use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
-use App\Domain\GitLab\Services\BranchParser;
-use App\Domain\GitLab\Services\GitLabClientInterface;
-use App\Domain\Matching\Actions\MatchAllUnmatched;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 
-class SyncService implements SyncServiceInterface
+final readonly class SyncGitLab
 {
     private const int MAX_CHANGED_FILES = 100;
 
     public function __construct(
-        private readonly GitLabClientInterface $gitLabClient,
-        private readonly Bitrix24ClientInterface $bitrix24Client,
-        private readonly MatchAllUnmatched $matchAllUnmatched,
-        private readonly BranchParser $branchParser,
-        private readonly ConventionalCommitParser $commitParser,
+        private GitLabClientInterface $gitLabClient,
+        private BranchParser $branchParser,
+        private ConventionalCommitParser $commitParser,
     ) {
     }
 
-    public function syncAll(): void
-    {
-        $this->syncGitLab();
-        $this->syncBitrix24();
-        ($this->matchAllUnmatched)();
-    }
-
-    public function syncGitLab(): SyncLog
+    public function __invoke(?string $since = null, ?string $until = null): SyncLog
     {
         $startedAt = CarbonImmutable::now();
 
         try {
-            $itemsSynced = $this->performGitLabSync();
+            $itemsSynced = $this->performSync($since, $until);
 
             return $this->createSyncLog(
-                source: SyncSource::GitLab,
                 status: SyncStatus::Success,
                 itemsSynced: $itemsSynced,
                 startedAt: $startedAt,
             );
         } catch (\Throwable $e) {
             return $this->createSyncLog(
-                source: SyncSource::GitLab,
                 status: SyncStatus::Failed,
                 itemsSynced: 0,
                 startedAt: $startedAt,
@@ -66,76 +50,7 @@ class SyncService implements SyncServiceInterface
         }
     }
 
-    public function syncBitrix24(): SyncLog
-    {
-        $startedAt = CarbonImmutable::now();
-
-        try {
-            $itemsSynced = $this->performBitrix24Sync();
-
-            return $this->createSyncLog(
-                source: SyncSource::Bitrix24,
-                status: SyncStatus::Success,
-                itemsSynced: $itemsSynced,
-                startedAt: $startedAt,
-            );
-        } catch (\Throwable $e) {
-            return $this->createSyncLog(
-                source: SyncSource::Bitrix24,
-                status: SyncStatus::Failed,
-                itemsSynced: 0,
-                startedAt: $startedAt,
-                errorMessage: $e->getMessage(),
-            );
-        }
-    }
-
-    public function resync(DateRange $dateRange): void
-    {
-        $startedAt = CarbonImmutable::now();
-
-        try {
-            $this->performGitLabSync($dateRange->from->toDateString(), $dateRange->to->toDateString());
-            $this->createSyncLog(
-                source: SyncSource::GitLab,
-                status: SyncStatus::Success,
-                itemsSynced: 0,
-                startedAt: $startedAt,
-            );
-        } catch (\Throwable $e) {
-            $this->createSyncLog(
-                source: SyncSource::GitLab,
-                status: SyncStatus::Failed,
-                itemsSynced: 0,
-                startedAt: $startedAt,
-                errorMessage: $e->getMessage(),
-            );
-        }
-
-        $startedAt = CarbonImmutable::now();
-
-        try {
-            $this->performBitrix24Sync();
-            $this->createSyncLog(
-                source: SyncSource::Bitrix24,
-                status: SyncStatus::Success,
-                itemsSynced: 0,
-                startedAt: $startedAt,
-            );
-        } catch (\Throwable $e) {
-            $this->createSyncLog(
-                source: SyncSource::Bitrix24,
-                status: SyncStatus::Failed,
-                itemsSynced: 0,
-                startedAt: $startedAt,
-                errorMessage: $e->getMessage(),
-            );
-        }
-
-        ($this->matchAllUnmatched)();
-    }
-
-    private function performGitLabSync(?string $since = null, ?string $until = null): int
+    private function performSync(?string $since = null, ?string $until = null): int
     {
         $setting = Setting::query()->first();
         $gitlabUsername = $setting?->gitlab_username;
@@ -216,51 +131,6 @@ class SyncService implements SyncServiceInterface
         return $itemsSynced;
     }
 
-    private function performBitrix24Sync(): int
-    {
-        $setting = Setting::query()->first();
-
-        /** @var string|null $bitrix24UserId */
-        $bitrix24UserId = $setting?->bitrix24_user_id;
-
-        if ($bitrix24UserId === null || $bitrix24UserId === '') {
-            return 0;
-        }
-
-        /** @var list<ProjectMapping> $mappings */
-        $mappings = ProjectMapping::all()->all();
-        $itemsSynced = 0;
-
-        foreach ($mappings as $mapping) {
-            /** @var int $groupId */
-            $groupId = $mapping->bitrix24_project_id;
-
-            $tasks = $this->bitrix24Client->getTasks(
-                userId: $bitrix24UserId,
-                groupId: $groupId,
-            );
-
-            foreach ($tasks as $taskData) {
-                Task::query()->updateOrCreate(
-                    ['bitrix24_task_id' => (int) $taskData['id']],
-                    [
-                        'title'             => $taskData['title'],
-                        'status'            => $this->mapBitrix24Status($taskData['status']),
-                        'project_id'        => (int) $taskData['groupId'],
-                        'project_name'      => $taskData['group']['name'],
-                        'bitrix24_url'      => $taskData['url'],
-                        'status_changed_at' => $taskData['closedDate'],
-                        'synced_at'         => CarbonImmutable::now(),
-                    ],
-                );
-
-                $itemsSynced++;
-            }
-        }
-
-        return $itemsSynced;
-    }
-
     private function syncMergeRequestDiffStats(Branch $branch, int $repoId, int $mrIid): void
     {
         try {
@@ -296,16 +166,7 @@ class SyncService implements SyncServiceInterface
         return $commitEmail === $configuredEmail;
     }
 
-    private function mapBitrix24Status(string $status): TaskStatus
-    {
-        return match ($status) {
-            '5'     => TaskStatus::Completed,
-            default => TaskStatus::InProgress,
-        };
-    }
-
     private function createSyncLog(
-        SyncSource $source,
         SyncStatus $status,
         int $itemsSynced,
         CarbonImmutable $startedAt,
@@ -313,7 +174,7 @@ class SyncService implements SyncServiceInterface
     ): SyncLog {
         /** @var SyncLog */
         return SyncLog::query()->create([
-            'source'        => $source,
+            'source'        => SyncSource::GitLab,
             'status'        => $status,
             'items_synced'  => $itemsSynced,
             'error_message' => $errorMessage,

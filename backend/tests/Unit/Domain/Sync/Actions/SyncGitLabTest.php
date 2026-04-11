@@ -2,41 +2,32 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Services\Sync;
+namespace Tests\Unit\Domain\Sync\Actions;
 
-use App\Domain\Sync\Enums\SyncSource;
-use App\Domain\Sync\Enums\SyncStatus;
-use App\Domain\Bitrix24\Enums\TaskStatus;
 use App\Domain\GitLab\Models\Branch;
 use App\Domain\GitLab\Models\Commit;
+use App\Domain\GitLab\Services\BranchParser;
+use App\Domain\GitLab\Services\ConventionalCommitParser;
+use App\Domain\GitLab\Services\GitLabClientInterface;
 use App\Domain\Settings\Models\ProjectMapping;
 use App\Domain\Settings\Models\Setting;
-use App\Domain\Bitrix24\Models\Task;
-use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
-use App\Domain\GitLab\Services\BranchParser;
-use App\Domain\GitLab\Services\GitLabClientInterface;
-use App\Domain\Matching\Actions\MatchAllUnmatched;
-use App\Domain\Matching\Actions\MatchBranch;
-use App\Domain\GitLab\Services\ConventionalCommitParser;
-use App\Services\Sync\SyncService;
+use App\Domain\Sync\Actions\SyncGitLab;
+use App\Domain\Sync\Enums\SyncSource;
+use App\Domain\Sync\Enums\SyncStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
-class SyncServiceTest extends TestCase
+final class SyncGitLabTest extends TestCase
 {
     use RefreshDatabase;
 
     private GitLabClientInterface&MockInterface $gitLabClient;
 
-    private Bitrix24ClientInterface&MockInterface $bitrix24Client;
+    private SyncGitLab $action;
 
-    private MatchAllUnmatched $matchAllUnmatched;
-
-    private SyncService $syncService;
-
-    public function test_sync_git_lab_creates_branches_and_commits(): void
+    public function test_creates_branches_and_commits(): void
     {
         Setting::factory()->create(['gitlab_username' => 'testuser']);
         ProjectMapping::factory()->create(['gitlab_repo_id' => 42]);
@@ -75,16 +66,17 @@ class SyncServiceTest extends TestCase
                 ],
             ]);
 
-        $log = $this->syncService->syncGitLab();
+        $log = ($this->action)();
 
         $this->assertNull($log->error_message, 'Sync error: ' . (string) $log->error_message);
         $this->assertSame(SyncStatus::Success, $log->status);
-        $this->assertSame(2, $log->items_synced); // 1 branch + 1 commit
+        $this->assertSame(SyncSource::GitLab, $log->source);
+        $this->assertSame(2, $log->items_synced);
         $this->assertDatabaseCount('branches', 1);
         $this->assertDatabaseCount('commits', 1);
     }
 
-    public function test_sync_git_lab_parses_branch_names(): void
+    public function test_parses_branch_names(): void
     {
         Setting::factory()->create(['gitlab_username' => 'testuser']);
         ProjectMapping::factory()->create(['gitlab_repo_id' => 42]);
@@ -107,12 +99,9 @@ class SyncServiceTest extends TestCase
                 ],
             ]);
 
-        $this->gitLabClient
-            ->shouldReceive('getMergeRequestCommits')
-            ->once()
-            ->andReturn([]);
+        $this->gitLabClient->shouldReceive('getMergeRequestCommits')->once()->andReturn([]);
 
-        $log = $this->syncService->syncGitLab();
+        $log = ($this->action)();
 
         $this->assertNull($log->error_message, 'Sync error: ' . (string) $log->error_message);
 
@@ -122,7 +111,7 @@ class SyncServiceTest extends TestCase
         $this->assertSame('main', $branch->parsed_parent_branch);
     }
 
-    public function test_sync_git_lab_extracts_conventional_type(): void
+    public function test_extracts_conventional_type(): void
     {
         Setting::factory()->create(['gitlab_username' => 'testuser']);
         ProjectMapping::factory()->create(['gitlab_repo_id' => 10]);
@@ -161,8 +150,7 @@ class SyncServiceTest extends TestCase
                 ],
             ]);
 
-        $log = $this->syncService->syncGitLab();
-
+        $log = ($this->action)();
         $this->assertNull($log->error_message, 'Sync error: ' . (string) $log->error_message);
 
         /** @var Commit $commit */
@@ -170,101 +158,7 @@ class SyncServiceTest extends TestCase
         $this->assertSame('feat', $commit->conventional_type);
     }
 
-    public function test_sync_bitrix24_creates_task_records(): void
-    {
-        Setting::factory()->create(['bitrix24_user_id' => '777']);
-        ProjectMapping::factory()->create(['bitrix24_project_id' => 5]);
-
-        $this->bitrix24Client
-            ->shouldReceive('getTasks')
-            ->once()
-            ->andReturn([
-                [
-                    'id'             => '1001',
-                    'title'          => 'Fix login page',
-                    'status'         => '5',
-                    'statusComplete' => '5',
-                    'groupId'        => '5',
-                    'group'          => ['id' => '5', 'name' => 'Project Alpha'],
-                    'closedDate'     => '2026-03-10T15:00:00+03:00',
-                    'url'            => 'https://bitrix24.example.com/task/1001',
-                ],
-                [
-                    'id'             => '1002',
-                    'title'          => 'Add dashboard',
-                    'status'         => '3',
-                    'statusComplete' => '0',
-                    'groupId'        => '5',
-                    'group'          => ['id' => '5', 'name' => 'Project Alpha'],
-                    'closedDate'     => null,
-                    'url'            => 'https://bitrix24.example.com/task/1002',
-                ],
-            ]);
-
-        $log = $this->syncService->syncBitrix24();
-
-        $this->assertNull($log->error_message, 'Sync error: ' . (string) $log->error_message);
-        $this->assertSame(SyncStatus::Success, $log->status);
-        $this->assertSame(2, $log->items_synced);
-        $this->assertDatabaseCount('tasks', 2);
-
-        /** @var Task $completedTask */
-        $completedTask = Task::query()->where('bitrix24_task_id', 1001)->first();
-        $this->assertSame(TaskStatus::Completed, $completedTask->status);
-
-        /** @var Task $inProgressTask */
-        $inProgressTask = Task::query()->where('bitrix24_task_id', 1002)->first();
-        $this->assertSame(TaskStatus::InProgress, $inProgressTask->status);
-    }
-
-    public function test_sync_all_runs_matching_after_sync(): void
-    {
-        Setting::factory()->create([
-            'gitlab_username'  => 'testuser',
-            'bitrix24_user_id' => '777',
-        ]);
-
-        $this->gitLabClient->shouldReceive('getMergeRequests')->andReturn([]);
-        $this->bitrix24Client->shouldReceive('getTasks')->andReturn([]);
-
-        $this->syncService->syncAll();
-
-        $this->assertDatabaseCount('sync_logs', 2); // gitlab + bitrix24
-    }
-
-    public function test_sync_creates_success_log(): void
-    {
-        Setting::factory()->create(['gitlab_username' => 'testuser']);
-        ProjectMapping::factory()->create(['gitlab_repo_id' => 1]);
-
-        $this->gitLabClient->shouldReceive('getMergeRequests')->andReturn([]);
-
-        $log = $this->syncService->syncGitLab();
-
-        $this->assertSame(SyncStatus::Success, $log->status);
-        $this->assertSame(SyncSource::GitLab, $log->source);
-        $this->assertNotNull($log->started_at);
-        $this->assertNotNull($log->completed_at);
-    }
-
-    public function test_sync_creates_failed_log_on_error(): void
-    {
-        Setting::factory()->create(['gitlab_username' => 'testuser']);
-        ProjectMapping::factory()->create(['gitlab_repo_id' => 1]);
-
-        $this->gitLabClient
-            ->shouldReceive('getMergeRequests')
-            ->andThrow(new \RuntimeException('Connection refused'));
-
-        $log = $this->syncService->syncGitLab();
-
-        $this->assertSame(SyncStatus::Failed, $log->status);
-        $this->assertSame(SyncSource::GitLab, $log->source);
-        $this->assertSame('Connection refused', $log->error_message);
-        $this->assertSame(0, $log->items_synced);
-    }
-
-    public function test_sync_git_lab_stores_mr_metadata(): void
+    public function test_stores_mr_metadata(): void
     {
         Setting::factory()->create(['gitlab_username' => 'testuser']);
         ProjectMapping::factory()->create(['gitlab_repo_id' => 42]);
@@ -287,13 +181,9 @@ class SyncServiceTest extends TestCase
                 ],
             ]);
 
-        $this->gitLabClient
-            ->shouldReceive('getMergeRequestCommits')
-            ->once()
-            ->andReturn([]);
+        $this->gitLabClient->shouldReceive('getMergeRequestCommits')->once()->andReturn([]);
 
-        $log = $this->syncService->syncGitLab();
-
+        $log = ($this->action)();
         $this->assertNull($log->error_message, 'Sync error: ' . (string) $log->error_message);
 
         /** @var Branch $branch */
@@ -305,18 +195,45 @@ class SyncServiceTest extends TestCase
         $this->assertNotNull($branch->mr_merged_at);
     }
 
+    public function test_creates_success_log(): void
+    {
+        Setting::factory()->create(['gitlab_username' => 'testuser']);
+        ProjectMapping::factory()->create(['gitlab_repo_id' => 1]);
+
+        $this->gitLabClient->shouldReceive('getMergeRequests')->andReturn([]);
+
+        $log = ($this->action)();
+
+        $this->assertSame(SyncStatus::Success, $log->status);
+        $this->assertSame(SyncSource::GitLab, $log->source);
+        $this->assertNotNull($log->started_at);
+        $this->assertNotNull($log->completed_at);
+    }
+
+    public function test_creates_failed_log_on_error(): void
+    {
+        Setting::factory()->create(['gitlab_username' => 'testuser']);
+        ProjectMapping::factory()->create(['gitlab_repo_id' => 1]);
+
+        $this->gitLabClient
+            ->shouldReceive('getMergeRequests')
+            ->andThrow(new \RuntimeException('Connection refused'));
+
+        $log = ($this->action)();
+
+        $this->assertSame(SyncStatus::Failed, $log->status);
+        $this->assertSame(SyncSource::GitLab, $log->source);
+        $this->assertSame('Connection refused', $log->error_message);
+        $this->assertSame(0, $log->items_synced);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->gitLabClient = Mockery::mock(GitLabClientInterface::class);
-        $this->bitrix24Client = Mockery::mock(Bitrix24ClientInterface::class);
-        $this->matchAllUnmatched = new MatchAllUnmatched(new MatchBranch());
-
-        $this->syncService = new SyncService(
+        $this->action = new SyncGitLab(
             gitLabClient: $this->gitLabClient,
-            bitrix24Client: $this->bitrix24Client,
-            matchAllUnmatched: $this->matchAllUnmatched,
             branchParser: new BranchParser(),
             commitParser: new ConventionalCommitParser(),
         );
