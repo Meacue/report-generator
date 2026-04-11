@@ -11,6 +11,8 @@ use App\Domain\Narrative\Actions\RegenerateDayNarrative;
 use App\Domain\Narrative\Actions\RegenerateTaskNarrative;
 use App\Domain\Narrative\Actions\UndoDayNarrative;
 use App\Domain\Narrative\Actions\UndoTaskNarrative;
+use App\Domain\Report\Actions\GenerateReport;
+use App\Domain\Report\Queries\GetReportPreview;
 use App\Exceptions\NoDataException;
 use App\Http\Requests\GenerateReportRequest;
 use App\Http\Requests\UpdateNarrativeRequest;
@@ -19,7 +21,6 @@ use App\Domain\Report\Models\Report;
 use App\Domain\Settings\Models\Setting;
 use App\Domain\Bitrix24\Models\Task;
 use App\Services\Report\PromptExportServiceInterface;
-use App\Services\Report\ReportBuilderInterface;
 use App\Services\Report\ReportExporterInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,6 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class ReportController extends Controller
 {
     public function __construct(
-        private readonly ReportBuilderInterface $builder,
         private readonly ReportExporterInterface $exporter,
         private readonly PromptExportServiceInterface $promptExportService,
     ) {
@@ -78,8 +78,11 @@ class ReportController extends Controller
      *
      * @throws NoDataException
      */
-    public function generate(GenerateReportRequest $request, GenerateNarrativesForReport $generateNarratives): JsonResponse
-    {
+    public function generate(
+        GenerateReportRequest $request,
+        GenerateReport $generateReport,
+        GenerateNarrativesForReport $generateNarratives,
+    ): JsonResponse {
         /** @var array{type: string, date_from: string, date_to: string} $validated */
         $validated = $request->validated();
 
@@ -97,7 +100,7 @@ class ReportController extends Controller
             throw new NoDataException();
         }
 
-        $report = $this->builder->generate($validated['type'], $dateRange);
+        $report = $generateReport($validated['type'], $dateRange);
 
         $generateNarratives($report);
 
@@ -107,9 +110,9 @@ class ReportController extends Controller
     /**
      * Get report preview with all days and tasks.
      */
-    public function preview(Report $report): JsonResponse
+    public function preview(Report $report, GetReportPreview $getPreview): JsonResponse
     {
-        $data = $this->builder->getPreview($report);
+        $data = $getPreview($report);
 
         return response()->json(['data' => $data]);
     }
@@ -218,11 +221,11 @@ class ReportController extends Controller
     /**
      * Export report as .docx.
      */
-    public function export(Report $report): BinaryFileResponse
+    public function export(Report $report, GetReportPreview $getPreview): BinaryFileResponse
     {
         $report->guardExportable();
 
-        $preview = $this->builder->getPreview($report);
+        $preview = $getPreview($report);
 
         $settings = Setting::first();
         $developerName = $settings !== null ? ($settings->developer_name ?? 'Разработчик') : 'Разработчик';

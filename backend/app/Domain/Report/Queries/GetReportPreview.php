@@ -2,82 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Report;
+namespace App\Domain\Report\Queries;
 
-use App\Domain\Shared\ValueObjects\DateRange;
-use App\Domain\Report\Enums\ReportDaySource;
-use App\Domain\Report\Enums\ReportStatus;
-use App\Domain\Report\Enums\ReportType;
-use App\Domain\GitLab\Models\Commit;
-use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportDay;
-use App\Domain\Report\Models\ReportDayTask;
 use App\Domain\Report\Models\ReportTask;
-use App\Domain\Bitrix24\Models\Task;
-use Carbon\Carbon;
-use Illuminate\Support\Collection;
 
-class ReportBuilder implements ReportBuilderInterface
+final readonly class GetReportPreview
 {
-    public function generate(string $type, DateRange $dateRange): Report
-    {
-        $report = Report::create([
-            'type'      => ReportType::from($type),
-            'date_from' => $dateRange->from->toDateString(),
-            'date_to'   => $dateRange->to->toDateString(),
-            'status'    => ReportStatus::Draft,
-        ]);
-
-        $period = $dateRange->toPeriod();
-        /** @var array<int, ReportTask> $reportTaskMap */
-        $reportTaskMap = [];
-
-        /** @var Carbon $date */
-        foreach ($period as $date) {
-            $dateString = $date->format('Y-m-d');
-
-            $commits = $this->findCommitsForDate($dateString);
-
-            if ($commits->isEmpty()) {
-                $this->createReportDay(
-                    $report,
-                    $dateString,
-                    ReportDaySource::Bitrix24Fallback,
-                    null,
-                );
-
-                continue;
-            }
-
-            $narrative = $this->buildPlaceholderNarrative($commits);
-
-            $reportDay = $this->createReportDay(
-                $report,
-                $dateString,
-                ReportDaySource::Commits,
-                $narrative,
-            );
-
-            $taskIds = $this->findTaskIdsFromCommits($commits);
-
-            foreach ($taskIds as $taskId) {
-                if (! isset($reportTaskMap[$taskId])) {
-                    $reportTaskMap[$taskId] = $this->createReportTask($report, $taskId);
-                }
-
-                ReportDayTask::create([
-                    'report_day_id'  => $reportDay->id,
-                    'report_task_id' => $reportTaskMap[$taskId]->id,
-                ]);
-            }
-        }
-
-        $report->markAsGenerated();
-
-        return $report->refresh();
-    }
-
     /**
      * @return array{
      *     id: int,
@@ -101,7 +33,7 @@ class ReportBuilder implements ReportBuilderInterface
      *     tasks: list<array{id: int, task_id: int|null, narrative: string|null, project_name: string, is_edited: bool, task: array{id: int, bitrix24_task_id: int|null, title: string, status: string}|null}>
      * }
      */
-    public function getPreview(Report $report): array
+    public function __invoke(Report $report): array
     {
         $report->load(['reportDays.reportDayTasks.reportTask.task', 'reportTasks.task']);
 
@@ -160,88 +92,7 @@ class ReportBuilder implements ReportBuilderInterface
     }
 
     /**
-     * Find commits for a specific date.
-     *
-     * @return Collection<int, Commit>
-     */
-    private function findCommitsForDate(string $date): Collection
-    {
-        return Commit::whereDate('committed_at', $date)->get();
-    }
-
-    /**
-     * Build a placeholder narrative from commit messages.
-     *
-     * @param  Collection<int, Commit>  $commits
-     */
-    private function buildPlaceholderNarrative(Collection $commits): string
-    {
-        $messages = $commits->pluck('message')->implode(', ');
-
-        return 'Выполнены коммиты: ' . $messages;
-    }
-
-    /**
-     * Find task IDs linked to commits via match_results (commit -> branch -> match_result -> task).
-     *
-     * @param  Collection<int, Commit>  $commits
-     * @return list<int>
-     */
-    private function findTaskIdsFromCommits(Collection $commits): array
-    {
-        /** @var list<int> $branchIds */
-        $branchIds = $commits->pluck('branch_id')->unique()->filter()->values()->all();
-
-        if ($branchIds === []) {
-            return [];
-        }
-
-        /** @var list<int> */
-        return MatchResult::whereIn('branch_id', $branchIds)
-            ->whereNotNull('task_id')
-            ->distinct()
-            ->pluck('task_id')
-            ->all();
-    }
-
-    private function createReportDay(
-        Report $report,
-        string $date,
-        ReportDaySource $source,
-        ?string $narrative,
-    ): ReportDay {
-        /** @var ReportDay */
-        return $report->reportDays()->create([
-            'date'      => $date,
-            'source'    => $source,
-            'narrative' => $narrative,
-            'is_edited' => false,
-        ]);
-    }
-
-    private function createReportTask(Report $report, int $taskId): ReportTask
-    {
-        $task = Task::find($taskId);
-
-        /** @var ReportTask */
-        return $report->reportTasks()->create([
-            'task_id'      => $taskId,
-            'narrative'    => null,
-            'project_name' => $task?->project_name,
-            'is_edited'    => false,
-        ]);
-    }
-
-    /**
-     * Find tasks linked to a specific day through the report_day_tasks pivot.
-     *
-     * @return list<array{
-     *     id: int|null,
-     *     title: string,
-     *     project_name: string|null,
-     *     narrative: string|null,
-     *     is_edited: bool
-     * }>
+     * @return list<array{id: int|null, title: string, project_name: string|null, narrative: string|null, is_edited: bool}>
      */
     private function findTasksForDay(ReportDay $reportDay): array
     {
@@ -272,8 +123,6 @@ class ReportBuilder implements ReportBuilderInterface
     }
 
     /**
-     * Build a fallback task entry for days with narrative but no linked tasks.
-     *
      * @return list<array{id: int|null, title: string, project_name: string|null, narrative: string|null, is_edited: bool}>
      */
     private function buildFallbackTaskFromNarrative(ReportDay $reportDay): array
