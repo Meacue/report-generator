@@ -18,7 +18,7 @@ use App\Domain\Bitrix24\Models\Task;
 use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
 use App\Domain\GitLab\Services\BranchParser;
 use App\Domain\GitLab\Services\GitLabClientInterface;
-use App\Services\Matching\MatchingEngineInterface;
+use App\Domain\Matching\Actions\MatchAllUnmatched;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 
@@ -29,7 +29,7 @@ class SyncService implements SyncServiceInterface
     public function __construct(
         private readonly GitLabClientInterface $gitLabClient,
         private readonly Bitrix24ClientInterface $bitrix24Client,
-        private readonly MatchingEngineInterface $matchingEngine,
+        private readonly MatchAllUnmatched $matchAllUnmatched,
         private readonly BranchParser $branchParser,
         private readonly ConventionalCommitParser $commitParser,
     ) {
@@ -39,7 +39,7 @@ class SyncService implements SyncServiceInterface
     {
         $this->syncGitLab();
         $this->syncBitrix24();
-        $this->matchingEngine->matchAllUnmatched();
+        ($this->matchAllUnmatched)();
     }
 
     public function syncGitLab(): SyncLog
@@ -132,7 +132,7 @@ class SyncService implements SyncServiceInterface
             );
         }
 
-        $this->matchingEngine->matchAllUnmatched();
+        ($this->matchAllUnmatched)();
     }
 
     private function performGitLabSync(?string $since = null, ?string $until = null): int

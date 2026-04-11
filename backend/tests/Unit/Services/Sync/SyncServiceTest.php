@@ -15,11 +15,11 @@ use App\Domain\Bitrix24\Models\Task;
 use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
 use App\Domain\GitLab\Services\BranchParser;
 use App\Domain\GitLab\Services\GitLabClientInterface;
-use App\Services\Matching\MatchingEngineInterface;
+use App\Domain\Matching\Actions\MatchAllUnmatched;
+use App\Domain\Matching\Actions\MatchBranch;
 use App\Domain\GitLab\Services\ConventionalCommitParser;
 use App\Services\Sync\SyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Collection;
 use Mockery;
 use Mockery\MockInterface;
 use Tests\TestCase;
@@ -32,7 +32,7 @@ class SyncServiceTest extends TestCase
 
     private Bitrix24ClientInterface&MockInterface $bitrix24Client;
 
-    private MatchingEngineInterface&MockInterface $matchingEngine;
+    private MatchAllUnmatched $matchAllUnmatched;
 
     private SyncService $syncService;
 
@@ -227,14 +227,8 @@ class SyncServiceTest extends TestCase
         $this->gitLabClient->shouldReceive('getMergeRequests')->andReturn([]);
         $this->bitrix24Client->shouldReceive('getTasks')->andReturn([]);
 
-        $this->matchingEngine
-            ->shouldReceive('matchAllUnmatched')
-            ->once()
-            ->andReturn(new Collection());
-
         $this->syncService->syncAll();
 
-        // Matching engine was called (verified by shouldReceive->once())
         $this->assertDatabaseCount('sync_logs', 2); // gitlab + bitrix24
     }
 
@@ -317,12 +311,12 @@ class SyncServiceTest extends TestCase
 
         $this->gitLabClient = Mockery::mock(GitLabClientInterface::class);
         $this->bitrix24Client = Mockery::mock(Bitrix24ClientInterface::class);
-        $this->matchingEngine = Mockery::mock(MatchingEngineInterface::class);
+        $this->matchAllUnmatched = new MatchAllUnmatched(new MatchBranch());
 
         $this->syncService = new SyncService(
             gitLabClient: $this->gitLabClient,
             bitrix24Client: $this->bitrix24Client,
-            matchingEngine: $this->matchingEngine,
+            matchAllUnmatched: $this->matchAllUnmatched,
             branchParser: new BranchParser(),
             commitParser: new ConventionalCommitParser(),
         );

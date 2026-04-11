@@ -7,7 +7,7 @@ namespace App\Jobs;
 use App\Domain\Sync\Enums\SyncStatus;
 use App\Domain\Sync\Enums\SyncStep;
 use App\Domain\Sync\Models\SyncJob;
-use App\Services\Matching\MatchingEngineInterface;
+use App\Domain\Matching\Actions\MatchAllUnmatched;
 use App\Services\Sync\SyncServiceInterface;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -34,15 +34,15 @@ class RunSyncJob implements ShouldQueue
     ) {
     }
 
-    public function handle(SyncServiceInterface $syncService, MatchingEngineInterface $matchingEngine): void
+    public function handle(SyncServiceInterface $syncService, MatchAllUnmatched $matchAllUnmatched): void
     {
         $syncJob = SyncJob::findOrFail($this->syncJobId);
 
         try {
             if ($this->dateFrom !== null && $this->dateTo !== null) {
-                $this->runResync($syncJob, $syncService, $matchingEngine);
+                $this->runResync($syncJob, $syncService, $matchAllUnmatched);
             } else {
-                $this->runFullSync($syncJob, $syncService, $matchingEngine);
+                $this->runFullSync($syncJob, $syncService, $matchAllUnmatched);
             }
         } catch (\Throwable $e) {
             $syncJob->markFailed($e->getMessage());
@@ -65,7 +65,7 @@ class RunSyncJob implements ShouldQueue
     private function runFullSync(
         SyncJob $syncJob,
         SyncServiceInterface $syncService,
-        MatchingEngineInterface $matchingEngine,
+        MatchAllUnmatched $matchAllUnmatched,
     ): void {
         $syncJob->markStep(SyncStep::GitLab);
         $this->publishProgress(['status' => 'in_progress', 'current_step' => 'gitlab']);
@@ -77,7 +77,7 @@ class RunSyncJob implements ShouldQueue
 
         $syncJob->markStep(SyncStep::Matching);
         $this->publishProgress(['status' => 'in_progress', 'current_step' => 'matching']);
-        $matchingEngine->matchAllUnmatched();
+        $matchAllUnmatched();
 
         $syncJob->markCompleted();
         $this->publishProgress(['status' => 'success']);
@@ -86,7 +86,7 @@ class RunSyncJob implements ShouldQueue
     private function runResync(
         SyncJob $syncJob,
         SyncServiceInterface $syncService,
-        MatchingEngineInterface $matchingEngine,
+        MatchAllUnmatched $matchAllUnmatched,
     ): void {
         /** @var string $dateFrom */
         $dateFrom = $this->dateFrom;
@@ -103,7 +103,7 @@ class RunSyncJob implements ShouldQueue
 
         $syncJob->markStep(SyncStep::Matching);
         $this->publishProgress(['status' => 'in_progress', 'current_step' => 'matching']);
-        $matchingEngine->matchAllUnmatched();
+        $matchAllUnmatched();
 
         $syncJob->markCompleted();
         $this->publishProgress(['status' => 'success']);
