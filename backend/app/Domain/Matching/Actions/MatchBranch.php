@@ -38,7 +38,7 @@ final readonly class MatchBranch
         /** @var Task|null $task */
         $task = Task::where('bitrix24_task_id', (int) $parsedTaskNumber)->first();
 
-        if ($task instanceof Task) {
+        if ($task !== null) {
             return [$task, ConfidenceLevel::Auto];
         }
 

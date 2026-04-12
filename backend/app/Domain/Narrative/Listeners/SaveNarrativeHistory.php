@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Narrative\Listeners;
 
-use App\Domain\Narrative\Enums\NarrativeSource;
 use App\Domain\Narrative\Events\NarrativeEdited;
 use App\Domain\Narrative\Events\NarrativeRegenerated;
 use App\Domain\Narrative\Models\NarrativeHistory;
@@ -18,14 +17,10 @@ final readonly class SaveNarrativeHistory
 
     public function handle(NarrativeEdited|NarrativeRegenerated $event): void
     {
-        $source = $event instanceof NarrativeEdited
-            ? NarrativeSource::ManualEdit
-            : NarrativeSource::LlmRegeneration;
-
         $event->narratable->narrativeHistory()->create([
             'previous_narrative' => $event->previousNarrative,
             'changed_at'         => now(),
-            'source'             => $source,
+            'source'             => $event->source(),
         ]);
 
         $this->pruneHistory($event->narratable);
