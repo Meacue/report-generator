@@ -4,22 +4,18 @@ declare(strict_types=1);
 
 namespace App\Domain\Narrative\Actions;
 
-use App\Domain\Narrative\Enums\NarrativeSource;
-use App\Domain\Narrative\Services\NarrativeSupport;
+use App\Domain\Narrative\Events\NarrativeEdited;
 use App\Domain\Report\Models\ReportDay;
 
 final readonly class EditDayNarrative
 {
-    public function __construct(
-        private NarrativeSupport $support,
-    ) {
-    }
-
     public function __invoke(ReportDay $reportDay, string $newNarrative): ReportDay
     {
-        $this->support->saveHistory($reportDay, NarrativeSource::ManualEdit);
+        $previousNarrative = $reportDay->narrative ?? '';
 
         $reportDay->editNarrative($newNarrative);
+
+        NarrativeEdited::dispatch($reportDay, $previousNarrative);
 
         return $reportDay->refresh();
     }

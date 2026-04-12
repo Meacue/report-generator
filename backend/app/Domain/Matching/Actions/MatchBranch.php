@@ -7,6 +7,7 @@ namespace App\Domain\Matching\Actions;
 use App\Domain\Bitrix24\Models\Task;
 use App\Domain\GitLab\Models\Branch;
 use App\Domain\Matching\Enums\ConfidenceLevel;
+use App\Domain\Matching\Events\BranchMatched;
 use App\Domain\Matching\Enums\ResolvedBy;
 use App\Domain\Matching\Models\MatchResult;
 
@@ -14,20 +15,34 @@ final readonly class MatchBranch
 {
     public function __invoke(Branch $branch): MatchResult
     {
+        [$task, $confidence] = $this->resolve($branch);
+
+        $matchResult = $this->createOrUpdateMatch($branch, $task, $confidence);
+
+        BranchMatched::dispatch($matchResult, $branch);
+
+        return $matchResult;
+    }
+
+    /**
+     * @return array{0: Task|null, 1: ConfidenceLevel}
+     */
+    private function resolve(Branch $branch): array
+    {
         $parsedTaskNumber = $branch->parsed_task_number;
 
-        if ($parsedTaskNumber !== null) {
-            /** @var Task|null $task */
-            $task = Task::where('bitrix24_task_id', (int) $parsedTaskNumber)->first();
-
-            if ($task instanceof Task) {
-                return $this->createOrUpdateMatch($branch, $task, ConfidenceLevel::Auto);
-            }
-
-            return $this->createOrUpdateMatch($branch, null, ConfidenceLevel::Probable);
+        if ($parsedTaskNumber === null) {
+            return [null, ConfidenceLevel::None];
         }
 
-        return $this->createOrUpdateMatch($branch, null, ConfidenceLevel::None);
+        /** @var Task|null $task */
+        $task = Task::where('bitrix24_task_id', (int) $parsedTaskNumber)->first();
+
+        if ($task instanceof Task) {
+            return [$task, ConfidenceLevel::Auto];
+        }
+
+        return [null, ConfidenceLevel::Probable];
     }
 
     private function createOrUpdateMatch(

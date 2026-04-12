@@ -6,10 +6,12 @@ namespace Tests\Unit\Domain\Narrative\Actions;
 
 use App\Domain\Narrative\Actions\RegenerateTaskNarrative;
 use App\Domain\Narrative\Enums\NarrativeSource;
+use App\Domain\Narrative\Events\NarrativeRegenerated;
 use App\Domain\Narrative\Services\NarrativeSupport;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Bitrix24\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\Mocks\MockLlmProvider;
 use Tests\TestCase;
 
@@ -79,6 +81,20 @@ final class RegenerateTaskNarrativeTest extends TestCase
             '[Не удалось сгенерировать описание. Отредактируйте вручную.]',
             $result->narrative
         );
+    }
+
+    public function test_dispatches_narrative_regenerated_event(): void
+    {
+        Event::fake([NarrativeRegenerated::class]);
+
+        $previousNarrative = 'Old narrative text.';
+        $reportTask = ReportTask::factory()->create(['narrative' => $previousNarrative]);
+
+        ($this->action)($reportTask);
+
+        Event::assertDispatched(NarrativeRegenerated::class, function (NarrativeRegenerated $event) use ($reportTask, $previousNarrative): bool {
+            return $event->narratable->is($reportTask) && $event->previousNarrative === $previousNarrative;
+        });
     }
 
     protected function setUp(): void

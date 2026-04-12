@@ -9,7 +9,9 @@ use App\Domain\GitLab\Models\Branch;
 use App\Domain\Matching\Actions\MatchBranch;
 use App\Domain\Matching\Enums\ConfidenceLevel;
 use App\Domain\Matching\Enums\ResolvedBy;
+use App\Domain\Matching\Events\BranchMatched;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 final class MatchBranchTest extends TestCase
@@ -49,6 +51,17 @@ final class MatchBranchTest extends TestCase
 
         $this->assertSame(ConfidenceLevel::None, $result->confidence_level);
         $this->assertNull($result->task_id);
+    }
+
+    public function test_dispatches_branch_matched_event(): void
+    {
+        Event::fake([BranchMatched::class]);
+
+        $branch = Branch::factory()->create(['parsed_task_number' => null]);
+
+        ($this->action)($branch);
+
+        Event::assertDispatched(BranchMatched::class);
     }
 
     protected function setUp(): void

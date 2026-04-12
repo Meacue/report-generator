@@ -6,7 +6,7 @@ namespace App\Domain\Narrative\Actions;
 
 use App\Domain\Narrative\DTOs\DayCommitsNarrativeRequest;
 use App\Domain\Narrative\DTOs\DayFallbackRequest;
-use App\Domain\Narrative\Enums\NarrativeSource;
+use App\Domain\Narrative\Events\NarrativeRegenerated;
 use App\Domain\Narrative\Services\NarrativeSupport;
 use App\Domain\Report\Enums\ReportDaySource;
 use App\Domain\Report\Models\Report;
@@ -26,7 +26,7 @@ final readonly class RegenerateDayNarrative
 
     public function __invoke(ReportDay $reportDay): ReportDay
     {
-        $this->support->saveHistory($reportDay, NarrativeSource::LlmRegeneration);
+        $previousNarrative = $reportDay->narrative ?? '';
 
         $reportDay->load('report.reportTasks.task');
 
@@ -40,7 +40,13 @@ final readonly class RegenerateDayNarrative
         $systemPrompt = $this->support->getSystemPrompt();
 
         if ($reportDay->source === ReportDaySource::Commits && ! $this->support->dayHasLinkedTasks($reportDay)) {
-            return $this->regenerateDayFromCommits($reportDay, $systemPrompt);
+            $regenerated = $this->regenerateDayFromCommits($reportDay, $systemPrompt);
+
+            if ($regenerated) {
+                NarrativeRegenerated::dispatch($reportDay, $previousNarrative);
+            }
+
+            return $reportDay->refresh();
         }
 
         $taskTitles = $this->support->extractTaskTitles($report);
@@ -68,15 +74,17 @@ final readonly class RegenerateDayNarrative
             ]);
         }
 
+        NarrativeRegenerated::dispatch($reportDay, $previousNarrative);
+
         return $reportDay->refresh();
     }
 
-    private function regenerateDayFromCommits(ReportDay $reportDay, ?string $systemPrompt): ReportDay
+    private function regenerateDayFromCommits(ReportDay $reportDay, ?string $systemPrompt): bool
     {
         $commits = $this->support->getCommitMessagesForDate($reportDay);
 
         if ($commits === []) {
-            return $reportDay->refresh();
+            return false;
         }
 
         $request = new DayCommitsNarrativeRequest(
@@ -102,6 +110,6 @@ final readonly class RegenerateDayNarrative
             ]);
         }
 
-        return $reportDay->refresh();
+        return true;
     }
 }

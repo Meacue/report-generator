@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Narrative\Actions;
 
 use App\Domain\Narrative\DTOs\TaskNarrativeRequest;
-use App\Domain\Narrative\Enums\NarrativeSource;
+use App\Domain\Narrative\Events\NarrativeRegenerated;
 use App\Domain\Narrative\Services\NarrativeSupport;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Report\ValueObjects\Narrative;
@@ -23,7 +23,7 @@ final readonly class RegenerateTaskNarrative
 
     public function __invoke(ReportTask $reportTask): ReportTask
     {
-        $this->support->saveHistory($reportTask, NarrativeSource::LlmRegeneration);
+        $previousNarrative = $reportTask->narrative ?? '';
 
         $commits = $this->support->getCommitMessagesForTask($reportTask);
         $systemPrompt = $this->support->getSystemPrompt();
@@ -58,6 +58,8 @@ final readonly class RegenerateTaskNarrative
                 'is_edited' => false,
             ]);
         }
+
+        NarrativeRegenerated::dispatch($reportTask, $previousNarrative);
 
         return $reportTask->refresh();
     }

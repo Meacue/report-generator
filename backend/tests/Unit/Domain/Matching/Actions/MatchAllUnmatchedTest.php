@@ -9,7 +9,9 @@ use App\Domain\GitLab\Models\Branch;
 use App\Domain\Matching\Actions\MatchAllUnmatched;
 use App\Domain\Matching\Actions\MatchBranch;
 use App\Domain\Matching\Enums\ConfidenceLevel;
+use App\Domain\Matching\Events\BranchMatched;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -59,6 +61,9 @@ final class MatchAllUnmatchedTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Event::fake([BranchMatched::class]);
+
         $this->action = new MatchAllUnmatched(new MatchBranch());
     }
 }
