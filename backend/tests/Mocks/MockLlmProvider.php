@@ -9,7 +9,7 @@ use App\Domain\Narrative\DTOs\DayFallbackRequest;
 use App\Domain\Narrative\DTOs\DayFallbackResponse;
 use App\Domain\Narrative\DTOs\TaskNarrativeRequest;
 use App\Domain\Narrative\DTOs\TaskNarrativeResponse;
-use App\Services\LLM\LlmProviderInterface;
+use App\Domain\Narrative\Services\LlmProviderInterface;
 
 final class MockLlmProvider implements LlmProviderInterface
 {

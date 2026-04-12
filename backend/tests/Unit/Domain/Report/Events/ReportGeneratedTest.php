@@ -15,7 +15,7 @@ use App\Domain\Report\Events\ReportGenerated;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Shared\ValueObjects\DateRange;
-use App\Services\LLM\LlmProviderInterface;
+use App\Domain\Narrative\Services\LlmProviderInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\Mocks\MockLlmProvider;

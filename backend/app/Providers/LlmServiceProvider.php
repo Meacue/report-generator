@@ -7,7 +7,7 @@ namespace App\Providers;
 use App\Domain\Settings\Models\Setting;
 use App\Services\LLM\ClaudeProvider;
 use App\Services\LLM\LlmManager;
-use App\Services\LLM\LlmProviderInterface;
+use App\Domain\Narrative\Services\LlmProviderInterface;
 use App\Services\LLM\OpenAiProvider;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;

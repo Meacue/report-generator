@@ -9,7 +9,7 @@ use App\Domain\Narrative\Events\NarrativeRegenerated;
 use App\Domain\Narrative\Services\NarrativeSupport;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Report\ValueObjects\Narrative;
-use App\Services\LLM\LlmProviderInterface;
+use App\Domain\Narrative\Services\LlmProviderInterface;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 

@@ -12,7 +12,7 @@ use App\Domain\Report\Enums\ReportDaySource;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportDay;
 use App\Domain\Report\ValueObjects\Narrative;
-use App\Services\LLM\LlmProviderInterface;
+use App\Domain\Narrative\Services\LlmProviderInterface;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
