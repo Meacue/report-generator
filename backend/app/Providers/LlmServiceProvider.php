@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Settings\Models\Setting;
-use App\Services\LLM\ClaudeProvider;
-use App\Services\LLM\LlmManager;
 use App\Domain\Narrative\Services\LlmProviderInterface;
-use App\Services\LLM\OpenAiProvider;
+use App\Infrastructure\LLM\ClaudeProvider;
+use App\Infrastructure\LLM\LlmManager;
+use App\Infrastructure\LLM\OpenAiProvider;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
