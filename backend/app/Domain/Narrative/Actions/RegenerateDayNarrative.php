@@ -40,10 +40,13 @@ final readonly class RegenerateDayNarrative
         $systemPrompt = $this->support->getSystemPrompt();
 
         if ($reportDay->source === ReportDaySource::Commits && ! $this->support->dayHasLinkedTasks($reportDay)) {
-            $result = $this->regenerateDayFromCommits($reportDay, $systemPrompt);
-            NarrativeRegenerated::dispatch($reportDay, $previousNarrative);
+            $regenerated = $this->regenerateDayFromCommits($reportDay, $systemPrompt);
 
-            return $result;
+            if ($regenerated) {
+                NarrativeRegenerated::dispatch($reportDay, $previousNarrative);
+            }
+
+            return $reportDay->refresh();
         }
 
         $taskTitles = $this->support->extractTaskTitles($report);
@@ -76,12 +79,12 @@ final readonly class RegenerateDayNarrative
         return $reportDay->refresh();
     }
 
-    private function regenerateDayFromCommits(ReportDay $reportDay, ?string $systemPrompt): ReportDay
+    private function regenerateDayFromCommits(ReportDay $reportDay, ?string $systemPrompt): bool
     {
         $commits = $this->support->getCommitMessagesForDate($reportDay);
 
         if ($commits === []) {
-            return $reportDay->refresh();
+            return false;
         }
 
         $request = new DayCommitsNarrativeRequest(
@@ -107,6 +110,6 @@ final readonly class RegenerateDayNarrative
             ]);
         }
 
-        return $reportDay->refresh();
+        return true;
     }
 }

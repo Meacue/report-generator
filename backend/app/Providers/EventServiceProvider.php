@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Matching\Events\BranchMatched;
 use App\Domain\Matching\Listeners\MatchBranchesOnSyncCompleted;
 use App\Domain\Narrative\Events\NarrativeEdited;
 use App\Domain\Narrative\Events\NarrativeRegenerated;
@@ -23,6 +24,7 @@ class EventServiceProvider extends ServiceProvider
         SyncCompleted::class => [
             MatchBranchesOnSyncCompleted::class,
         ],
+        BranchMatched::class   => [],
         NarrativeEdited::class => [
             SaveNarrativeHistory::class,
         ],

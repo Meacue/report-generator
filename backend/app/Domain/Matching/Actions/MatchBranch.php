@@ -15,29 +15,34 @@ final readonly class MatchBranch
 {
     public function __invoke(Branch $branch): MatchResult
     {
-        $parsedTaskNumber = $branch->parsed_task_number;
+        [$task, $confidence] = $this->resolve($branch);
 
-        if ($parsedTaskNumber !== null) {
-            /** @var Task|null $task */
-            $task = Task::where('bitrix24_task_id', (int) $parsedTaskNumber)->first();
+        $matchResult = $this->createOrUpdateMatch($branch, $task, $confidence);
 
-            if ($task instanceof Task) {
-                $matchResult = $this->createOrUpdateMatch($branch, $task, ConfidenceLevel::Auto);
-                BranchMatched::dispatch($matchResult, $branch);
-
-                return $matchResult;
-            }
-
-            $matchResult = $this->createOrUpdateMatch($branch, null, ConfidenceLevel::Probable);
-            BranchMatched::dispatch($matchResult, $branch);
-
-            return $matchResult;
-        }
-
-        $matchResult = $this->createOrUpdateMatch($branch, null, ConfidenceLevel::None);
         BranchMatched::dispatch($matchResult, $branch);
 
         return $matchResult;
+    }
+
+    /**
+     * @return array{0: Task|null, 1: ConfidenceLevel}
+     */
+    private function resolve(Branch $branch): array
+    {
+        $parsedTaskNumber = $branch->parsed_task_number;
+
+        if ($parsedTaskNumber === null) {
+            return [null, ConfidenceLevel::None];
+        }
+
+        /** @var Task|null $task */
+        $task = Task::where('bitrix24_task_id', (int) $parsedTaskNumber)->first();
+
+        if ($task instanceof Task) {
+            return [$task, ConfidenceLevel::Auto];
+        }
+
+        return [null, ConfidenceLevel::Probable];
     }
 
     private function createOrUpdateMatch(
