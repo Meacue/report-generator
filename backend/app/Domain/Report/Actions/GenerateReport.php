@@ -12,6 +12,7 @@ use App\Domain\Report\Enums\ReportStatus;
 use App\Domain\Report\Enums\ReportType;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportTask;
+use App\Domain\Report\Queries\GetCommitsForDate;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Bitrix24\Models\Task;
 use Carbon\Carbon;
@@ -19,6 +20,11 @@ use Illuminate\Support\Collection;
 
 final readonly class GenerateReport
 {
+    public function __construct(
+        private GetCommitsForDate $getCommitsForDate,
+    ) {
+    }
+
     public function __invoke(string $type, DateRange $dateRange): Report
     {
         $report = Report::create([
@@ -36,7 +42,7 @@ final readonly class GenerateReport
         foreach ($period as $date) {
             $dateString = $date->format('Y-m-d');
 
-            $commits = $this->findCommitsForDate($dateString);
+            $commits = ($this->getCommitsForDate)($dateString);
 
             if ($commits->isEmpty()) {
                 $report->addDay($dateString, ReportDaySource::Bitrix24Fallback);
@@ -65,14 +71,6 @@ final readonly class GenerateReport
         ReportGenerated::dispatch($report);
 
         return $report->refresh();
-    }
-
-    /**
-     * @return Collection<int, Commit>
-     */
-    private function findCommitsForDate(string $date): Collection
-    {
-        return Commit::whereDate('committed_at', $date)->get();
     }
 
     /**

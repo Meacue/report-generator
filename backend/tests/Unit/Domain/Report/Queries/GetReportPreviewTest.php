@@ -8,6 +8,7 @@ use App\Domain\GitLab\Models\Branch;
 use App\Domain\GitLab\Models\Commit;
 use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Actions\GenerateReport;
+use App\Domain\Report\Queries\GetCommitsForDate;
 use App\Domain\Report\Queries\GetReportPreview;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Bitrix24\Models\Task;
@@ -31,7 +32,7 @@ final class GetReportPreviewTest extends TestCase
             'message'      => 'feat: add user auth',
         ]);
 
-        $generateReport = new GenerateReport();
+        $generateReport = new GenerateReport(new GetCommitsForDate());
         $report = $generateReport('daily', new DateRange('2026-03-10', '2026-03-10'));
         $preview = ($this->query)($report);
 
