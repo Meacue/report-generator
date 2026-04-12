@@ -19,10 +19,7 @@ final readonly class EditDayNarrative
     {
         $this->support->saveHistory($reportDay, NarrativeSource::ManualEdit);
 
-        $reportDay->update([
-            'narrative' => $newNarrative,
-            'is_edited' => true,
-        ]);
+        $reportDay->editNarrative($newNarrative);
 
         return $reportDay->refresh();
     }

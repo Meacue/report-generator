@@ -9,7 +9,6 @@ use App\Domain\Narrative\DTOs\DayFallbackRequest;
 use App\Domain\Narrative\DTOs\TaskNarrativeRequest;
 use App\Domain\Narrative\Services\NarrativeSupport;
 use App\Domain\Report\Enums\ReportDaySource;
-use App\Domain\Report\Enums\ReportStatus;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportDay;
 use App\Domain\Report\Models\ReportDayTask;
@@ -36,7 +35,7 @@ final readonly class GenerateNarrativesForReport
         $this->generateDayLevelNarratives($report, $systemPrompt);
         $this->generateGlobalTaskNarratives($report, $systemPrompt);
 
-        $report->update(['status' => ReportStatus::Generated]);
+        $report->markAsGenerated();
     }
 
     private function generateDayTaskNarratives(Report $report, ?string $systemPrompt): void

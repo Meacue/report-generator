@@ -109,6 +109,16 @@ class Report extends Model
         return $this->reportTasks()->where('task_id', $taskId)->first();
     }
 
+    public function findDayOrFail(string $date): ReportDay
+    {
+        return $this->reportDays()->whereDate('date', $date)->firstOrFail();
+    }
+
+    public function findTaskOrFail(int $taskId): ReportTask
+    {
+        return $this->reportTasks()->where('task_id', $taskId)->firstOrFail();
+    }
+
     public function guardExportable(): void
     {
         if ($this->status === ReportStatus::Draft) {

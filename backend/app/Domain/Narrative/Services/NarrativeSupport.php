@@ -16,7 +16,7 @@ use App\Domain\Settings\Models\Setting;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 
-final class NarrativeSupport
+final readonly class NarrativeSupport
 {
     private const int MAX_HISTORY_ENTRIES = 5;
 

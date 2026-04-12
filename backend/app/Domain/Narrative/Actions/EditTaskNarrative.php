@@ -19,10 +19,7 @@ final readonly class EditTaskNarrative
     {
         $this->support->saveHistory($reportTask, NarrativeSource::ManualEdit);
 
-        $reportTask->update([
-            'narrative' => $newNarrative,
-            'is_edited' => true,
-        ]);
+        $reportTask->editNarrative($newNarrative);
 
         return $reportTask->refresh();
     }

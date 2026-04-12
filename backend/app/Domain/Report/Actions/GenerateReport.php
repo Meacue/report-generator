@@ -10,7 +10,6 @@ use App\Domain\Report\Enums\ReportDaySource;
 use App\Domain\Report\Enums\ReportStatus;
 use App\Domain\Report\Enums\ReportType;
 use App\Domain\Report\Models\Report;
-use App\Domain\Report\Models\ReportDayTask;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Bitrix24\Models\Task;
@@ -56,10 +55,7 @@ final readonly class GenerateReport
                     $reportTaskMap[$taskId] = $report->addTask($taskId, $task?->project_name);
                 }
 
-                ReportDayTask::create([
-                    'report_day_id'  => $reportDay->id,
-                    'report_task_id' => $reportTaskMap[$taskId]->id,
-                ]);
+                $reportDay->linkTask($reportTaskMap[$taskId]);
             }
         }
 

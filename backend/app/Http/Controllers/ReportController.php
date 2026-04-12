@@ -125,7 +125,7 @@ class ReportController extends Controller
         /** @var array{narrative: string} $validated */
         $validated = $request->validated();
 
-        $reportDay = $report->reportDays()->where('date', $date)->firstOrFail();
+        $reportDay = $report->findDayOrFail($date);
 
         $editDay($reportDay, $validated['narrative']);
 
@@ -140,7 +140,7 @@ class ReportController extends Controller
         /** @var array{narrative: string} $validated */
         $validated = $request->validated();
 
-        $reportTask = $report->reportTasks()->where('task_id', $taskId)->firstOrFail();
+        $reportTask = $report->findTaskOrFail($taskId);
 
         $editTask($reportTask, $validated['narrative']);
 
@@ -152,7 +152,7 @@ class ReportController extends Controller
      */
     public function regenerateTask(Report $report, int $taskId, RegenerateTaskNarrative $regenerateTask): JsonResponse
     {
-        $reportTask = $report->reportTasks()->where('task_id', $taskId)->firstOrFail();
+        $reportTask = $report->findTaskOrFail($taskId);
         $updated = $regenerateTask($reportTask);
 
         return response()->json(['data' => $updated]);
@@ -163,7 +163,7 @@ class ReportController extends Controller
      */
     public function regenerateDay(Report $report, string $date, RegenerateDayNarrative $regenerateDay): JsonResponse
     {
-        $reportDay = $report->reportDays()->where('date', $date)->firstOrFail();
+        $reportDay = $report->findDayOrFail($date);
         $updated = $regenerateDay($reportDay);
 
         return response()->json(['data' => $updated]);
@@ -174,7 +174,7 @@ class ReportController extends Controller
      */
     public function undoTask(Report $report, int $taskId, UndoTaskNarrative $undoTask): JsonResponse
     {
-        $reportTask = $report->reportTasks()->where('task_id', $taskId)->firstOrFail();
+        $reportTask = $report->findTaskOrFail($taskId);
         $result = $undoTask($reportTask);
 
         if ($result === null) {
@@ -189,7 +189,7 @@ class ReportController extends Controller
      */
     public function undoDay(Report $report, string $date, UndoDayNarrative $undoDay): JsonResponse
     {
-        $reportDay = $report->reportDays()->where('date', $date)->firstOrFail();
+        $reportDay = $report->findDayOrFail($date);
         $result = $undoDay($reportDay);
 
         if ($result === null) {
