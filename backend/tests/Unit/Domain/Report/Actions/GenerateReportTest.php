@@ -10,9 +10,11 @@ use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Actions\GenerateReport;
 use App\Domain\Report\Enums\ReportDaySource;
 use App\Domain\Report\Enums\ReportStatus;
+use App\Domain\Report\Events\ReportGenerated;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Bitrix24\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 final class GenerateReportTest extends TestCase
@@ -72,6 +74,7 @@ final class GenerateReportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Event::fake([ReportGenerated::class]);
         $this->action = new GenerateReport();
     }
 }

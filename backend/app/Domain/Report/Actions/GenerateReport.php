@@ -7,6 +7,7 @@ namespace App\Domain\Report\Actions;
 use App\Domain\GitLab\Models\Commit;
 use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Enums\ReportDaySource;
+use App\Domain\Report\Events\ReportGenerated;
 use App\Domain\Report\Enums\ReportStatus;
 use App\Domain\Report\Enums\ReportType;
 use App\Domain\Report\Models\Report;
@@ -60,6 +61,8 @@ final readonly class GenerateReport
         }
 
         $report->markAsGenerated();
+
+        ReportGenerated::dispatch($report);
 
         return $report->refresh();
     }

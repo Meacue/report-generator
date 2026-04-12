@@ -6,7 +6,7 @@ namespace App\Domain\Narrative\Actions;
 
 use App\Domain\Narrative\DTOs\DayCommitsNarrativeRequest;
 use App\Domain\Narrative\DTOs\DayFallbackRequest;
-use App\Domain\Narrative\Enums\NarrativeSource;
+use App\Domain\Narrative\Events\NarrativeRegenerated;
 use App\Domain\Narrative\Services\NarrativeSupport;
 use App\Domain\Report\Enums\ReportDaySource;
 use App\Domain\Report\Models\Report;
@@ -26,7 +26,7 @@ final readonly class RegenerateDayNarrative
 
     public function __invoke(ReportDay $reportDay): ReportDay
     {
-        $this->support->saveHistory($reportDay, NarrativeSource::LlmRegeneration);
+        $previousNarrative = $reportDay->narrative ?? '';
 
         $reportDay->load('report.reportTasks.task');
 
@@ -40,7 +40,10 @@ final readonly class RegenerateDayNarrative
         $systemPrompt = $this->support->getSystemPrompt();
 
         if ($reportDay->source === ReportDaySource::Commits && ! $this->support->dayHasLinkedTasks($reportDay)) {
-            return $this->regenerateDayFromCommits($reportDay, $systemPrompt);
+            $result = $this->regenerateDayFromCommits($reportDay, $systemPrompt);
+            NarrativeRegenerated::dispatch($reportDay, $previousNarrative);
+
+            return $result;
         }
 
         $taskTitles = $this->support->extractTaskTitles($report);
@@ -67,6 +70,8 @@ final readonly class RegenerateDayNarrative
                 'is_edited' => false,
             ]);
         }
+
+        NarrativeRegenerated::dispatch($reportDay, $previousNarrative);
 
         return $reportDay->refresh();
     }

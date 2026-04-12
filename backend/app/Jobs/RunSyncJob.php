@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
-use App\Domain\Matching\Actions\MatchAllUnmatched;
 use App\Domain\Sync\Actions\SyncBitrix24;
 use App\Domain\Sync\Actions\SyncGitLab;
 use App\Domain\Sync\Enums\SyncStatus;
+use App\Domain\Sync\Events\SyncCompleted;
 use App\Domain\Sync\Enums\SyncStep;
 use App\Domain\Sync\Models\SyncJob;
 use Illuminate\Bus\Queueable;
@@ -35,7 +35,7 @@ class RunSyncJob implements ShouldQueue
     ) {
     }
 
-    public function handle(SyncGitLab $syncGitLab, SyncBitrix24 $syncBitrix24, MatchAllUnmatched $matchAllUnmatched): void
+    public function handle(SyncGitLab $syncGitLab, SyncBitrix24 $syncBitrix24): void
     {
         $syncJob = SyncJob::findOrFail($this->syncJobId);
 
@@ -50,7 +50,7 @@ class RunSyncJob implements ShouldQueue
 
             $syncJob->markStep(SyncStep::Matching);
             $this->publishProgress(['status' => 'in_progress', 'current_step' => 'matching']);
-            $matchAllUnmatched();
+            SyncCompleted::dispatch();
 
             $syncJob->markCompleted();
             $this->publishProgress(['status' => 'success']);

@@ -7,6 +7,7 @@ namespace App\Domain\Matching\Actions;
 use App\Domain\Bitrix24\Models\Task;
 use App\Domain\GitLab\Models\Branch;
 use App\Domain\Matching\Enums\ConfidenceLevel;
+use App\Domain\Matching\Events\BranchMatched;
 use App\Domain\Matching\Enums\ResolvedBy;
 use App\Domain\Matching\Models\MatchResult;
 
@@ -21,13 +22,22 @@ final readonly class MatchBranch
             $task = Task::where('bitrix24_task_id', (int) $parsedTaskNumber)->first();
 
             if ($task instanceof Task) {
-                return $this->createOrUpdateMatch($branch, $task, ConfidenceLevel::Auto);
+                $matchResult = $this->createOrUpdateMatch($branch, $task, ConfidenceLevel::Auto);
+                BranchMatched::dispatch($matchResult, $branch);
+
+                return $matchResult;
             }
 
-            return $this->createOrUpdateMatch($branch, null, ConfidenceLevel::Probable);
+            $matchResult = $this->createOrUpdateMatch($branch, null, ConfidenceLevel::Probable);
+            BranchMatched::dispatch($matchResult, $branch);
+
+            return $matchResult;
         }
 
-        return $this->createOrUpdateMatch($branch, null, ConfidenceLevel::None);
+        $matchResult = $this->createOrUpdateMatch($branch, null, ConfidenceLevel::None);
+        BranchMatched::dispatch($matchResult, $branch);
+
+        return $matchResult;
     }
 
     private function createOrUpdateMatch(

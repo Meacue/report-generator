@@ -6,7 +6,6 @@ namespace App\Http\Controllers;
 
 use App\Domain\Narrative\Actions\EditDayNarrative;
 use App\Domain\Narrative\Actions\EditTaskNarrative;
-use App\Domain\Narrative\Actions\GenerateNarrativesForReport;
 use App\Domain\Narrative\Actions\RegenerateDayNarrative;
 use App\Domain\Narrative\Actions\RegenerateTaskNarrative;
 use App\Domain\Narrative\Actions\UndoDayNarrative;
@@ -81,7 +80,6 @@ class ReportController extends Controller
     public function generate(
         GenerateReportRequest $request,
         GenerateReport $generateReport,
-        GenerateNarrativesForReport $generateNarratives,
     ): JsonResponse {
         /** @var array{type: string, date_from: string, date_to: string} $validated */
         $validated = $request->validated();
@@ -101,8 +99,6 @@ class ReportController extends Controller
         }
 
         $report = $generateReport($validated['type'], $dateRange);
-
-        $generateNarratives($report);
 
         return response()->json(['data' => ['id' => $report->id]], 201);
     }
