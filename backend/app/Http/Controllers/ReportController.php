@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Narrative\Actions\EditDayNarrative;
+use App\Domain\Narrative\Actions\EditTaskNarrative;
+use App\Domain\Narrative\Actions\GenerateNarrativesForReport;
+use App\Domain\Narrative\Actions\RegenerateDayNarrative;
+use App\Domain\Narrative\Actions\RegenerateTaskNarrative;
+use App\Domain\Narrative\Actions\UndoDayNarrative;
+use App\Domain\Narrative\Actions\UndoTaskNarrative;
+use App\Domain\Report\Actions\GenerateReport;
+use App\Domain\Report\Queries\GetReportPreview;
 use App\Exceptions\NoDataException;
 use App\Http\Requests\GenerateReportRequest;
 use App\Http\Requests\UpdateNarrativeRequest;
@@ -11,9 +20,7 @@ use App\Domain\GitLab\Models\Commit;
 use App\Domain\Report\Models\Report;
 use App\Domain\Settings\Models\Setting;
 use App\Domain\Bitrix24\Models\Task;
-use App\Services\Narrative\NarrativeServiceInterface;
 use App\Services\Report\PromptExportServiceInterface;
-use App\Services\Report\ReportBuilderInterface;
 use App\Services\Report\ReportExporterInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,9 +30,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class ReportController extends Controller
 {
     public function __construct(
-        private readonly ReportBuilderInterface $builder,
         private readonly ReportExporterInterface $exporter,
-        private readonly NarrativeServiceInterface $narrativeService,
         private readonly PromptExportServiceInterface $promptExportService,
     ) {
     }
@@ -73,8 +78,11 @@ class ReportController extends Controller
      *
      * @throws NoDataException
      */
-    public function generate(GenerateReportRequest $request): JsonResponse
-    {
+    public function generate(
+        GenerateReportRequest $request,
+        GenerateReport $generateReport,
+        GenerateNarrativesForReport $generateNarratives,
+    ): JsonResponse {
         /** @var array{type: string, date_from: string, date_to: string} $validated */
         $validated = $request->validated();
 
@@ -92,9 +100,9 @@ class ReportController extends Controller
             throw new NoDataException();
         }
 
-        $report = $this->builder->generate($validated['type'], $dateRange);
+        $report = $generateReport($validated['type'], $dateRange);
 
-        $this->narrativeService->generateForReport($report);
+        $generateNarratives($report);
 
         return response()->json(['data' => ['id' => $report->id]], 201);
     }
@@ -102,9 +110,9 @@ class ReportController extends Controller
     /**
      * Get report preview with all days and tasks.
      */
-    public function preview(Report $report): JsonResponse
+    public function preview(Report $report, GetReportPreview $getPreview): JsonResponse
     {
-        $data = $this->builder->getPreview($report);
+        $data = $getPreview($report);
 
         return response()->json(['data' => $data]);
     }
@@ -112,14 +120,14 @@ class ReportController extends Controller
     /**
      * Update day narrative.
      */
-    public function updateDay(UpdateNarrativeRequest $request, Report $report, string $date): JsonResponse
+    public function updateDay(UpdateNarrativeRequest $request, Report $report, string $date, EditDayNarrative $editDay): JsonResponse
     {
         /** @var array{narrative: string} $validated */
         $validated = $request->validated();
 
-        $reportDay = $report->reportDays()->where('date', $date)->firstOrFail();
+        $reportDay = $report->findDayOrFail($date);
 
-        $this->narrativeService->editDayNarrative($reportDay, $validated['narrative']);
+        $editDay($reportDay, $validated['narrative']);
 
         return response()->json(['message' => 'Updated']);
     }
@@ -127,14 +135,14 @@ class ReportController extends Controller
     /**
      * Update task narrative.
      */
-    public function updateTask(UpdateNarrativeRequest $request, Report $report, int $taskId): JsonResponse
+    public function updateTask(UpdateNarrativeRequest $request, Report $report, int $taskId, EditTaskNarrative $editTask): JsonResponse
     {
         /** @var array{narrative: string} $validated */
         $validated = $request->validated();
 
-        $reportTask = $report->reportTasks()->where('task_id', $taskId)->firstOrFail();
+        $reportTask = $report->findTaskOrFail($taskId);
 
-        $this->narrativeService->editTaskNarrative($reportTask, $validated['narrative']);
+        $editTask($reportTask, $validated['narrative']);
 
         return response()->json(['message' => 'Updated']);
     }
@@ -142,10 +150,10 @@ class ReportController extends Controller
     /**
      * Regenerate task narrative via LLM.
      */
-    public function regenerateTask(Report $report, int $taskId): JsonResponse
+    public function regenerateTask(Report $report, int $taskId, RegenerateTaskNarrative $regenerateTask): JsonResponse
     {
-        $reportTask = $report->reportTasks()->where('task_id', $taskId)->firstOrFail();
-        $updated = $this->narrativeService->regenerateTask($reportTask);
+        $reportTask = $report->findTaskOrFail($taskId);
+        $updated = $regenerateTask($reportTask);
 
         return response()->json(['data' => $updated]);
     }
@@ -153,10 +161,10 @@ class ReportController extends Controller
     /**
      * Regenerate day narrative via LLM.
      */
-    public function regenerateDay(Report $report, string $date): JsonResponse
+    public function regenerateDay(Report $report, string $date, RegenerateDayNarrative $regenerateDay): JsonResponse
     {
-        $reportDay = $report->reportDays()->where('date', $date)->firstOrFail();
-        $updated = $this->narrativeService->regenerateDay($reportDay);
+        $reportDay = $report->findDayOrFail($date);
+        $updated = $regenerateDay($reportDay);
 
         return response()->json(['data' => $updated]);
     }
@@ -164,10 +172,10 @@ class ReportController extends Controller
     /**
      * Undo last task narrative change.
      */
-    public function undoTask(Report $report, int $taskId): JsonResponse
+    public function undoTask(Report $report, int $taskId, UndoTaskNarrative $undoTask): JsonResponse
     {
-        $reportTask = $report->reportTasks()->where('task_id', $taskId)->firstOrFail();
-        $result = $this->narrativeService->undoTaskNarrative($reportTask);
+        $reportTask = $report->findTaskOrFail($taskId);
+        $result = $undoTask($reportTask);
 
         if ($result === null) {
             return response()->json(['message' => 'No history available'], 404);
@@ -179,10 +187,10 @@ class ReportController extends Controller
     /**
      * Undo last day narrative change.
      */
-    public function undoDay(Report $report, string $date): JsonResponse
+    public function undoDay(Report $report, string $date, UndoDayNarrative $undoDay): JsonResponse
     {
-        $reportDay = $report->reportDays()->where('date', $date)->firstOrFail();
-        $result = $this->narrativeService->undoDayNarrative($reportDay);
+        $reportDay = $report->findDayOrFail($date);
+        $result = $undoDay($reportDay);
 
         if ($result === null) {
             return response()->json(['message' => 'No history available'], 404);
@@ -213,9 +221,11 @@ class ReportController extends Controller
     /**
      * Export report as .docx.
      */
-    public function export(Report $report): BinaryFileResponse
+    public function export(Report $report, GetReportPreview $getPreview): BinaryFileResponse
     {
-        $preview = $this->builder->getPreview($report);
+        $report->guardExportable();
+
+        $preview = $getPreview($report);
 
         $settings = Setting::first();
         $developerName = $settings !== null ? ($settings->developer_name ?? 'Разработчик') : 'Разработчик';

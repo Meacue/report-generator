@@ -54,6 +54,13 @@ class ReportDay extends Model
         return $this->hasMany(ReportDayTask::class);
     }
 
+    public function linkTask(ReportTask $reportTask): ReportDayTask
+    {
+        return $this->reportDayTasks()->create([
+            'report_task_id' => $reportTask->id,
+        ]);
+    }
+
     /**
      * @return MorphMany<NarrativeHistory, $this>
      */

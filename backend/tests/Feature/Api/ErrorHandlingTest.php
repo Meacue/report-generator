@@ -4,17 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
-use App\Domain\Shared\ValueObjects\DateRange;
 use App\Exceptions\ServiceUnavailableException;
-use App\Domain\GitLab\Models\Branch;
-use App\Domain\GitLab\Models\Commit;
-use App\Domain\Matching\Models\MatchResult;
-use App\Domain\Report\Models\Report;
-use App\Domain\Bitrix24\Models\Task;
-use App\Services\Narrative\NarrativeService;
-use App\Services\Narrative\NarrativeServiceInterface;
-use App\Services\Report\ReportBuilderInterface;
+use App\Services\LLM\LlmProviderInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\Mocks\MockLlmProvider;
 use Tests\TestCase;
 
@@ -66,69 +59,11 @@ class ErrorHandlingTest extends TestCase
 
     public function test_service_unavailable_returns_503(): void
     {
-        $this->app->bind(ReportBuilderInterface::class, static function (): ReportBuilderInterface {
-            return new class () implements ReportBuilderInterface {
-                public function generate(string $type, DateRange $dateRange): Report
-                {
-                    throw new ServiceUnavailableException('GitLab');
-                }
-
-                /**
-                 * @return array{
-                 *     id: int,
-                 *     type: string,
-                 *     date_from: string,
-                 *     date_to: string,
-                 *     status: string,
-                 *     days: array<int, array{
-                 *         date: string,
-                 *         narrative: string|null,
-                 *         source: string,
-                 *         is_edited: bool,
-                 *         tasks: array<int, array{
-                 *             id: int|null,
-                 *             title: string,
-                 *             project_name: string|null,
-                 *             narrative: string|null,
-                 *             is_edited: bool
-                 *         }>
-                 *     }>
-                 * }
-                 */
-                public function getPreview(Report $report): array
-                {
-                    return [
-                        'id'        => $report->id,
-                        'type'      => $report->type->value,
-                        'date_from' => $report->date_from->format('Y-m-d'),
-                        'date_to'   => $report->date_to->format('Y-m-d'),
-                        'status'    => $report->status->value,
-                        'days'      => [],
-                    ];
-                }
-            };
+        Route::post('/api/_test/service-unavailable', static function (): never {
+            throw new ServiceUnavailableException('GitLab');
         });
 
-        // We need data in DB so NoDataException is not thrown before ReportBuilder::generate()
-        $task = Task::factory()->create([
-            'status_changed_at' => '2026-03-10 10:00:00',
-        ]);
-
-        $branch = Branch::factory()->create();
-        MatchResult::factory()->create([
-            'branch_id' => $branch->id,
-            'task_id'   => $task->id,
-        ]);
-        Commit::factory()->create([
-            'branch_id'    => $branch->id,
-            'committed_at' => '2026-03-10 14:00:00',
-        ]);
-
-        $response = $this->postJson('/api/reports/generate', [
-            'type'      => 'daily',
-            'date_from' => '2026-03-10',
-            'date_to'   => '2026-03-10',
-        ]);
+        $response = $this->postJson('/api/_test/service-unavailable');
 
         $response->assertStatus(503);
         $response->assertJsonStructure(['error', 'service', 'retry_after']);
@@ -136,68 +71,11 @@ class ErrorHandlingTest extends TestCase
 
     public function test_service_unavailable_response_contains_retry_after(): void
     {
-        $this->app->bind(ReportBuilderInterface::class, static function (): ReportBuilderInterface {
-            return new class () implements ReportBuilderInterface {
-                public function generate(string $type, DateRange $dateRange): Report
-                {
-                    throw new ServiceUnavailableException('Bitrix24');
-                }
-
-                /**
-                 * @return array{
-                 *     id: int,
-                 *     type: string,
-                 *     date_from: string,
-                 *     date_to: string,
-                 *     status: string,
-                 *     days: array<int, array{
-                 *         date: string,
-                 *         narrative: string|null,
-                 *         source: string,
-                 *         is_edited: bool,
-                 *         tasks: array<int, array{
-                 *             id: int|null,
-                 *             title: string,
-                 *             project_name: string|null,
-                 *             narrative: string|null,
-                 *             is_edited: bool
-                 *         }>
-                 *     }>
-                 * }
-                 */
-                public function getPreview(Report $report): array
-                {
-                    return [
-                        'id'        => $report->id,
-                        'type'      => $report->type->value,
-                        'date_from' => $report->date_from->format('Y-m-d'),
-                        'date_to'   => $report->date_to->format('Y-m-d'),
-                        'status'    => $report->status->value,
-                        'days'      => [],
-                    ];
-                }
-            };
+        Route::post('/api/_test/service-unavailable', static function (): never {
+            throw new ServiceUnavailableException('Bitrix24');
         });
 
-        $task = Task::factory()->create([
-            'status_changed_at' => '2026-03-10 10:00:00',
-        ]);
-
-        $branch = Branch::factory()->create();
-        MatchResult::factory()->create([
-            'branch_id' => $branch->id,
-            'task_id'   => $task->id,
-        ]);
-        Commit::factory()->create([
-            'branch_id'    => $branch->id,
-            'committed_at' => '2026-03-10 14:00:00',
-        ]);
-
-        $response = $this->postJson('/api/reports/generate', [
-            'type'      => 'daily',
-            'date_from' => '2026-03-10',
-            'date_to'   => '2026-03-10',
-        ]);
+        $response = $this->postJson('/api/_test/service-unavailable');
 
         $response->assertStatus(503);
         $this->assertSame(300, $response->json('retry_after'));
@@ -226,8 +104,6 @@ class ErrorHandlingTest extends TestCase
         parent::setUp();
 
         $mockLlm = new MockLlmProvider();
-        $this->app->bind(NarrativeServiceInterface::class, static function () use ($mockLlm): NarrativeService {
-            return new NarrativeService($mockLlm);
-        });
+        $this->app->instance(LlmProviderInterface::class, $mockLlm);
     }
 }

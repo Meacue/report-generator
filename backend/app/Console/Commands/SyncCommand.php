@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Domain\Matching\Actions\MatchAllUnmatched;
+use App\Domain\Sync\Actions\SyncBitrix24;
+use App\Domain\Sync\Actions\SyncGitLab;
 use App\Domain\Sync\Enums\SyncStatus;
-use App\Services\Sync\SyncServiceInterface;
 use Illuminate\Console\Command;
 
 class SyncCommand extends Command
@@ -22,7 +24,7 @@ class SyncCommand extends Command
      */
     protected $description = 'Run data synchronization from GitLab and Bitrix24';
 
-    public function handle(SyncServiceInterface $syncService): int
+    public function handle(SyncGitLab $syncGitLab, SyncBitrix24 $syncBitrix24, MatchAllUnmatched $matchAllUnmatched): int
     {
         $gitlabOnly = (bool) $this->option('gitlab-only');
         $bitrix24Only = (bool) $this->option('bitrix24-only');
@@ -35,7 +37,7 @@ class SyncCommand extends Command
 
         if ($gitlabOnly) {
             $this->info('Syncing GitLab data...');
-            $log = $syncService->syncGitLab();
+            $log = $syncGitLab();
 
             /** @var SyncStatus $logStatus */
             $logStatus = $log->status;
@@ -53,7 +55,7 @@ class SyncCommand extends Command
 
         if ($bitrix24Only) {
             $this->info('Syncing Bitrix24 data...');
-            $log = $syncService->syncBitrix24();
+            $log = $syncBitrix24();
 
             /** @var SyncStatus $logStatus */
             $logStatus = $log->status;
@@ -70,7 +72,9 @@ class SyncCommand extends Command
         }
 
         $this->info('Running full synchronization...');
-        $syncService->syncAll();
+        $syncGitLab();
+        $syncBitrix24();
+        $matchAllUnmatched();
         $this->info('Full synchronization completed.');
 
         return self::SUCCESS;

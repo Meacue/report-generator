@@ -11,8 +11,7 @@ use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Settings\Models\Setting;
 use App\Domain\Bitrix24\Models\Task;
-use App\Services\Narrative\NarrativeService;
-use App\Services\Narrative\NarrativeServiceInterface;
+use App\Services\LLM\LlmProviderInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Mocks\MockLlmProvider;
 use Tests\TestCase;
@@ -208,10 +207,6 @@ class ReportGenerationE2ETest extends TestCase
         parent::setUp();
 
         $this->mockLlm = new MockLlmProvider();
-        $mockLlm = $this->mockLlm;
-
-        $this->app->bind(NarrativeServiceInterface::class, static function () use ($mockLlm): NarrativeService {
-            return new NarrativeService($mockLlm);
-        });
+        $this->app->instance(LlmProviderInterface::class, $this->mockLlm);
     }
 }
