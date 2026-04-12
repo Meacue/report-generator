@@ -10,6 +10,7 @@ use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Actions\GenerateReport;
 use App\Domain\Report\Enums\ReportDaySource;
 use App\Domain\Report\Queries\GetCommitsForDate;
+use App\Domain\Report\Queries\GetTaskIdsFromCommits;
 use App\Domain\Report\Enums\ReportStatus;
 use App\Domain\Report\Events\ReportGenerated;
 use App\Domain\Shared\ValueObjects\DateRange;
@@ -76,6 +77,6 @@ final class GenerateReportTest extends TestCase
     {
         parent::setUp();
         Event::fake([ReportGenerated::class]);
-        $this->action = new GenerateReport(new GetCommitsForDate());
+        $this->action = new GenerateReport(new GetCommitsForDate(), new GetTaskIdsFromCommits());
     }
 }

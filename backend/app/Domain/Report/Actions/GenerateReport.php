@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Report\Actions;
 
 use App\Domain\GitLab\Models\Commit;
-use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Enums\ReportDaySource;
 use App\Domain\Report\Events\ReportGenerated;
 use App\Domain\Report\Enums\ReportStatus;
@@ -13,6 +12,7 @@ use App\Domain\Report\Enums\ReportType;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Report\Queries\GetCommitsForDate;
+use App\Domain\Report\Queries\GetTaskIdsFromCommits;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Bitrix24\Models\Task;
 use Carbon\Carbon;
@@ -22,6 +22,7 @@ final readonly class GenerateReport
 {
     public function __construct(
         private GetCommitsForDate $getCommitsForDate,
+        private GetTaskIdsFromCommits $getTaskIdsFromCommits,
     ) {
     }
 
@@ -54,7 +55,7 @@ final readonly class GenerateReport
 
             $reportDay = $report->addDay($dateString, ReportDaySource::Commits, $narrative);
 
-            $taskIds = $this->findTaskIdsFromCommits($commits);
+            $taskIds = ($this->getTaskIdsFromCommits)($commits);
 
             foreach ($taskIds as $taskId) {
                 if (! isset($reportTaskMap[$taskId])) {
@@ -81,26 +82,5 @@ final readonly class GenerateReport
         $messages = $commits->pluck('message')->implode(', ');
 
         return 'Выполнены коммиты: ' . $messages;
-    }
-
-    /**
-     * @param  Collection<int, Commit>  $commits
-     * @return list<int>
-     */
-    private function findTaskIdsFromCommits(Collection $commits): array
-    {
-        /** @var list<int> $branchIds */
-        $branchIds = $commits->pluck('branch_id')->unique()->filter()->values()->all();
-
-        if ($branchIds === []) {
-            return [];
-        }
-
-        /** @var list<int> */
-        return MatchResult::whereIn('branch_id', $branchIds)
-            ->whereNotNull('task_id')
-            ->distinct()
-            ->pluck('task_id')
-            ->all();
     }
 }
