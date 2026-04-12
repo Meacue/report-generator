@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Report;
 
-use App\Services\Report\WordExporter;
+use App\Infrastructure\Report\WordExporter;
 use PhpOffice\PhpWord\Element\AbstractElement;
 use PhpOffice\PhpWord\Element\Section;
 use PhpOffice\PhpWord\Element\Table;

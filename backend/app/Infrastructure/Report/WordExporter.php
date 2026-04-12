@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Report;
+namespace App\Infrastructure\Report;
 
+use App\Domain\Report\Services\ReportExporterInterface;
 use PhpOffice\PhpWord\ComplexType\TblWidth as ComplexTblWidth;
 use PhpOffice\PhpWord\Element\Cell;
 use PhpOffice\PhpWord\Element\Section;
@@ -13,7 +14,6 @@ use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\SimpleType\Jc;
 use PhpOffice\PhpWord\SimpleType\TblWidth;
 use PhpOffice\PhpWord\Style\Language;
-use App\Domain\Report\Services\ReportExporterInterface;
 use RuntimeException;
 
 class WordExporter implements ReportExporterInterface
