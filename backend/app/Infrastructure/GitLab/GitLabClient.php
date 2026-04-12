@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\GitLab\Services;
+namespace App\Infrastructure\GitLab;
 
+use App\Domain\GitLab\Services\GitLabClientInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;

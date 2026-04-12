@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Settings\Models\Setting;
-use App\Domain\GitLab\Services\GitLabClient;
+use App\Infrastructure\GitLab\GitLabClient;
 use App\Domain\GitLab\Services\GitLabClientInterface;
 use Illuminate\Support\ServiceProvider;
 

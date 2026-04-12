@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\GitLab;
 
-use App\Domain\GitLab\Services\GitLabClient;
+use App\Infrastructure\GitLab\GitLabClient;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
