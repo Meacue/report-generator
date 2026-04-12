@@ -66,7 +66,7 @@ class RunSyncJob implements ShouldQueue
     {
         $syncJob = SyncJob::find($this->syncJobId);
 
-        if ($syncJob instanceof SyncJob && $syncJob->status === SyncStatus::InProgress) {
+        if ($syncJob !== null && $syncJob->status === SyncStatus::InProgress) {
             $syncJob->markFailed($exception->getMessage());
             $this->publishProgress(['status' => 'failed', 'error_message' => $exception->getMessage()]);
         }
