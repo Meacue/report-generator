@@ -12,13 +12,12 @@ use App\Domain\Narrative\Actions\UndoDayNarrative;
 use App\Domain\Narrative\Actions\UndoTaskNarrative;
 use App\Domain\Report\Actions\GenerateReport;
 use App\Domain\Report\Queries\GetReportPreview;
+use App\Domain\Report\Queries\HasDataForDateRange;
 use App\Exceptions\NoDataException;
 use App\Http\Requests\GenerateReportRequest;
 use App\Http\Requests\UpdateNarrativeRequest;
-use App\Domain\GitLab\Models\Commit;
 use App\Domain\Report\Models\Report;
 use App\Domain\Settings\Models\Setting;
-use App\Domain\Bitrix24\Models\Task;
 use App\Domain\Report\Services\PromptExportServiceInterface;
 use App\Domain\Report\Services\ReportExporterInterface;
 use Illuminate\Http\JsonResponse;
@@ -80,21 +79,14 @@ class ReportController extends Controller
     public function generate(
         GenerateReportRequest $request,
         GenerateReport $generateReport,
+        HasDataForDateRange $hasData,
     ): JsonResponse {
         /** @var array{type: string, date_from: string, date_to: string} $validated */
         $validated = $request->validated();
 
         $dateRange = $request->toDateRange();
 
-        $commitsCount = Commit::query()
-            ->whereBetween('committed_at', [$dateRange->from->startOfDay(), $dateRange->to->endOfDay()])
-            ->count();
-
-        $tasksCount = Task::query()
-            ->whereBetween('status_changed_at', [$dateRange->from->startOfDay(), $dateRange->to->endOfDay()])
-            ->count();
-
-        if ($commitsCount === 0 && $tasksCount === 0) {
+        if (! ($hasData)($dateRange)) {
             throw new NoDataException();
         }
 
