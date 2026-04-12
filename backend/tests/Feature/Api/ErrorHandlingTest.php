@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api;
 
 use App\Exceptions\ServiceUnavailableException;
-use App\Services\LLM\LlmProviderInterface;
+use App\Domain\Narrative\Services\LlmProviderInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Tests\Mocks\MockLlmProvider;

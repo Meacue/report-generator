@@ -11,7 +11,7 @@ use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Settings\Models\Setting;
 use App\Domain\Bitrix24\Models\Task;
-use App\Services\LLM\LlmProviderInterface;
+use App\Domain\Narrative\Services\LlmProviderInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Mocks\MockLlmProvider;
 use Tests\TestCase;

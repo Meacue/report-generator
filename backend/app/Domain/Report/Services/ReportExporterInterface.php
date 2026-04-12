@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Report;
+namespace App\Domain\Report\Services;
 
 interface ReportExporterInterface
 {

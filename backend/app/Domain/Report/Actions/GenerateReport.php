@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Domain\Report\Actions;
 
 use App\Domain\GitLab\Models\Commit;
-use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Enums\ReportDaySource;
 use App\Domain\Report\Events\ReportGenerated;
 use App\Domain\Report\Enums\ReportStatus;
 use App\Domain\Report\Enums\ReportType;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportTask;
+use App\Domain\Report\Queries\GetCommitsForDate;
+use App\Domain\Report\Queries\GetTaskIdsFromCommits;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Bitrix24\Models\Task;
 use Carbon\Carbon;
@@ -19,6 +20,12 @@ use Illuminate\Support\Collection;
 
 final readonly class GenerateReport
 {
+    public function __construct(
+        private GetCommitsForDate $getCommitsForDate,
+        private GetTaskIdsFromCommits $getTaskIdsFromCommits,
+    ) {
+    }
+
     public function __invoke(string $type, DateRange $dateRange): Report
     {
         $report = Report::create([
@@ -36,7 +43,7 @@ final readonly class GenerateReport
         foreach ($period as $date) {
             $dateString = $date->format('Y-m-d');
 
-            $commits = $this->findCommitsForDate($dateString);
+            $commits = ($this->getCommitsForDate)($dateString);
 
             if ($commits->isEmpty()) {
                 $report->addDay($dateString, ReportDaySource::Bitrix24Fallback);
@@ -48,7 +55,7 @@ final readonly class GenerateReport
 
             $reportDay = $report->addDay($dateString, ReportDaySource::Commits, $narrative);
 
-            $taskIds = $this->findTaskIdsFromCommits($commits);
+            $taskIds = ($this->getTaskIdsFromCommits)($commits);
 
             foreach ($taskIds as $taskId) {
                 if (! isset($reportTaskMap[$taskId])) {
@@ -68,14 +75,6 @@ final readonly class GenerateReport
     }
 
     /**
-     * @return Collection<int, Commit>
-     */
-    private function findCommitsForDate(string $date): Collection
-    {
-        return Commit::whereDate('committed_at', $date)->get();
-    }
-
-    /**
      * @param  Collection<int, Commit>  $commits
      */
     private function buildPlaceholderNarrative(Collection $commits): string
@@ -83,26 +82,5 @@ final readonly class GenerateReport
         $messages = $commits->pluck('message')->implode(', ');
 
         return 'Выполнены коммиты: ' . $messages;
-    }
-
-    /**
-     * @param  Collection<int, Commit>  $commits
-     * @return list<int>
-     */
-    private function findTaskIdsFromCommits(Collection $commits): array
-    {
-        /** @var list<int> $branchIds */
-        $branchIds = $commits->pluck('branch_id')->unique()->filter()->values()->all();
-
-        if ($branchIds === []) {
-            return [];
-        }
-
-        /** @var list<int> */
-        return MatchResult::whereIn('branch_id', $branchIds)
-            ->whereNotNull('task_id')
-            ->distinct()
-            ->pluck('task_id')
-            ->all();
     }
 }

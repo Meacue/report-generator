@@ -11,11 +11,13 @@ use App\Domain\Narrative\Listeners\GenerateNarrativesOnReportGenerated;
 use App\Domain\Narrative\Services\NarrativeSupport;
 use App\Domain\Report\Actions\GenerateReport;
 use App\Domain\Report\Enums\ReportStatus;
+use App\Domain\Report\Queries\GetCommitsForDate;
+use App\Domain\Report\Queries\GetTaskIdsFromCommits;
 use App\Domain\Report\Events\ReportGenerated;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Shared\ValueObjects\DateRange;
-use App\Services\LLM\LlmProviderInterface;
+use App\Domain\Narrative\Services\LlmProviderInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\Mocks\MockLlmProvider;
@@ -34,7 +36,7 @@ final class ReportGeneratedTest extends TestCase
             'branch_id'    => $branch->id,
             'committed_at' => '2026-03-10 10:00:00',
         ]);
-        $action = new GenerateReport();
+        $action = new GenerateReport(new GetCommitsForDate(), new GetTaskIdsFromCommits());
 
         // WHEN — the GenerateReport action is invoked
         $report = $action('daily', new DateRange('2026-03-10', '2026-03-10'));

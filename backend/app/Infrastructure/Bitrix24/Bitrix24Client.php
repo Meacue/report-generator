@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Bitrix24\Services;
+namespace App\Infrastructure\Bitrix24;
 
+use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\LLM;
+namespace App\Domain\Narrative\Services;
 
 use App\Domain\Narrative\DTOs\DayCommitsNarrativeRequest;
 use App\Domain\Narrative\DTOs\DayFallbackRequest;

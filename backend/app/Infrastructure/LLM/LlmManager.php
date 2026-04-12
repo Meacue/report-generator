@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Services\LLM;
+namespace App\Infrastructure\LLM;
 
+use App\Domain\Narrative\Services\LlmProviderInterface;
 use InvalidArgumentException;
 
 class LlmManager

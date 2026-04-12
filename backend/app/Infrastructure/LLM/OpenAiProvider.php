@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Services\LLM;
+namespace App\Infrastructure\LLM;
 
 use App\Domain\Narrative\DTOs\DayCommitsNarrativeRequest;
 use App\Domain\Narrative\DTOs\DayFallbackRequest;
 use App\Domain\Narrative\DTOs\DayFallbackResponse;
 use App\Domain\Narrative\DTOs\TaskNarrativeRequest;
 use App\Domain\Narrative\DTOs\TaskNarrativeResponse;
+use App\Domain\Narrative\Services\LlmProviderInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;

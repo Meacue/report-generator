@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\Report\WordExporter;
+use App\Infrastructure\Report\WordExporter;
 use Illuminate\Console\Command;
 
 class TestWordExport extends Command

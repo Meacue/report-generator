@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Services\Report;
+namespace App\Infrastructure\Report;
 
-use App\Domain\Report\Enums\ReportDaySource;
-use App\Domain\Report\Enums\ReportType;
 use App\Domain\GitLab\Models\Commit;
 use App\Domain\Matching\Models\MatchResult;
+use App\Domain\Report\Enums\ReportDaySource;
+use App\Domain\Report\Enums\ReportType;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportDay;
 use App\Domain\Report\Models\ReportTask;
+use App\Domain\Report\Services\PromptExportServiceInterface;
 use App\Domain\Settings\Models\Setting;
 
 class PromptExportService implements PromptExportServiceInterface
@@ -31,6 +32,7 @@ class PromptExportService implements PromptExportServiceInterface
         'Saturday'  => 'Суббота',
         'Sunday'    => 'Воскресенье',
     ];
+
     private bool $enrichmentEnabled = true;
 
     public function buildPromptFile(Report $report): string
