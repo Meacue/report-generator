@@ -6,9 +6,10 @@ namespace Tests\Unit\Domain\Narrative\Actions;
 
 use App\Domain\Narrative\Actions\EditDayNarrative;
 use App\Domain\Narrative\Enums\NarrativeSource;
-use App\Domain\Narrative\Services\NarrativeSupport;
+use App\Domain\Narrative\Events\NarrativeEdited;
 use App\Domain\Report\Models\ReportDay;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 final class EditDayNarrativeTest extends TestCase
@@ -41,10 +42,24 @@ final class EditDayNarrativeTest extends TestCase
         $this->assertTrue($result->is_edited);
     }
 
+    public function test_dispatches_narrative_edited_event(): void
+    {
+        Event::fake([NarrativeEdited::class]);
+
+        $oldNarrative = 'Original day text.';
+        $reportDay = ReportDay::factory()->fromCommits()->create(['narrative' => $oldNarrative]);
+
+        ($this->action)($reportDay, 'New day text.');
+
+        Event::assertDispatched(NarrativeEdited::class, function (NarrativeEdited $event) use ($reportDay, $oldNarrative): bool {
+            return $event->narratable->is($reportDay) && $event->previousNarrative === $oldNarrative;
+        });
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->action = new EditDayNarrative(new NarrativeSupport());
+        $this->action = new EditDayNarrative();
     }
 }

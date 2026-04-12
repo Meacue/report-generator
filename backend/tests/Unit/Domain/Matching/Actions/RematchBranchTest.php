@@ -10,8 +10,10 @@ use App\Domain\Matching\Actions\MatchBranch;
 use App\Domain\Matching\Actions\RematchBranch;
 use App\Domain\Matching\Enums\ConfidenceLevel;
 use App\Domain\Matching\Enums\ResolvedBy;
+use App\Domain\Matching\Events\BranchMatched;
 use App\Domain\Matching\Models\MatchResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 final class RematchBranchTest extends TestCase
@@ -56,6 +58,9 @@ final class RematchBranchTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Event::fake([BranchMatched::class]);
+
         $this->action = new RematchBranch(new MatchBranch());
     }
 }
