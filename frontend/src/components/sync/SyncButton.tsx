@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AxiosError } from "axios";
+import axios from "axios";
 import { useSyncStatus, useTriggerSync } from "../../hooks/useSync";
 import { useSyncSSE } from "../../hooks/useSyncSSE";
 
@@ -28,7 +28,7 @@ export function SyncButton() {
       await triggerSync.mutateAsync();
       connect();
     } catch (e) {
-      if (e instanceof AxiosError && e.response?.status === 409) {
+      if (axios.isAxiosError(e) && e.response?.status === 409) {
         connect();
       }
     }
