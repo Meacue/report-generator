@@ -346,9 +346,14 @@ final class GitLabClient implements GitLabClientInterface
             ->retry(
                 times: self::RETRY_TIMES,
                 sleepMilliseconds: self::RETRY_BASE_MS,
-                when: fn (\Throwable $e): bool => $e instanceof ConnectionException
-                    || ($e instanceof RequestException && $e->response->status() >= 500),
+                when: $this->isRetryable(...),
                 throw: false,
             );
+    }
+
+    private function isRetryable(\Throwable $e): bool
+    {
+        return $e instanceof ConnectionException
+            || ($e instanceof RequestException && $e->response->status() >= 500);
     }
 }

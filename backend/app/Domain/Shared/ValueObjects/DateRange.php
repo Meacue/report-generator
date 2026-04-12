@@ -16,8 +16,8 @@ final readonly class DateRange
 
     public function __construct(string|CarbonImmutable $from, string|CarbonImmutable $to)
     {
-        $this->from = $from instanceof CarbonImmutable ? $from : CarbonImmutable::parse($from);
-        $this->to = $to instanceof CarbonImmutable ? $to : CarbonImmutable::parse($to);
+        $this->from = CarbonImmutable::parse($from);
+        $this->to = CarbonImmutable::parse($to);
 
         if ($this->from->isAfter($this->to)) {
             throw new InvalidArgumentException(

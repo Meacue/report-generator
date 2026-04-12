@@ -79,7 +79,6 @@ class WordExportSmokeTest extends TestCase
         $elements = $section->getElements();
 
         $captionFound = false;
-        $tableFound = false;
         $tableRowCount = 0;
         $firstRowContainsFio = false;
 
@@ -94,21 +93,23 @@ class WordExportSmokeTest extends TestCase
                     }
                 }
             }
+        }
 
-            if ($element instanceof Table) {
-                $tableFound = true;
-                $rows = $element->getRows();
-                $tableRowCount = count($rows);
+        $table = $this->findFirstTable($elements);
+        $tableFound = $table !== null;
 
-                if ($tableRowCount > 0) {
-                    $firstRow = $rows[0];
-                    foreach ($firstRow->getCells() as $cell) {
-                        foreach ($cell->getElements() as $cellElement) {
-                            if (method_exists($cellElement, 'getText')) {
-                                $cellText = $cellElement->getText();
-                                if (is_string($cellText) && str_contains($cellText, 'ФИО сотрудника')) {
-                                    $firstRowContainsFio = true;
-                                }
+        if ($table !== null) {
+            $rows = $table->getRows();
+            $tableRowCount = count($rows);
+
+            if ($tableRowCount > 0) {
+                $firstRow = $rows[0];
+                foreach ($firstRow->getCells() as $cell) {
+                    foreach ($cell->getElements() as $cellElement) {
+                        if (method_exists($cellElement, 'getText')) {
+                            $cellText = $cellElement->getText();
+                            if (is_string($cellText) && str_contains($cellText, 'ФИО сотрудника')) {
+                                $firstRowContainsFio = true;
                             }
                         }
                     }
@@ -232,11 +233,9 @@ class WordExportSmokeTest extends TestCase
 
         $tableRowCount = 0;
 
-        foreach ($section->getElements() as $element) {
-            if ($element instanceof Table) {
-                $tableRowCount = count($element->getRows());
-                break;
-            }
+        $table = $this->findFirstTable($section->getElements());
+        if ($table !== null) {
+            $tableRowCount = count($table->getRows());
         }
 
         $this->assertSame(6, $tableRowCount, 'Table must have 6 rows even with no days provided');
@@ -251,6 +250,20 @@ class WordExportSmokeTest extends TestCase
         }
 
         parent::tearDown();
+    }
+
+    /**
+     * @param  array<AbstractElement>  $elements
+     */
+    private function findFirstTable(array $elements): ?Table
+    {
+        foreach ($elements as $element) {
+            if ($element instanceof Table) {
+                return $element;
+            }
+        }
+
+        return null;
     }
 
     /**
