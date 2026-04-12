@@ -11,6 +11,7 @@ use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportDay;
 use App\Domain\Report\Models\ReportTask;
+use App\Domain\Report\Services\PromptExportServiceInterface;
 use App\Domain\Settings\Models\Setting;
 
 class PromptExportService implements PromptExportServiceInterface

@@ -13,6 +13,7 @@ use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\SimpleType\Jc;
 use PhpOffice\PhpWord\SimpleType\TblWidth;
 use PhpOffice\PhpWord\Style\Language;
+use App\Domain\Report\Services\ReportExporterInterface;
 use RuntimeException;
 
 class WordExporter implements ReportExporterInterface
