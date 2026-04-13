@@ -231,7 +231,7 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * Export monthly report grouped by project (PRD section 9.2).
+     * Export monthly report grouped by project.
      *
      * @param  array<string, mixed>  $reportData
      */
@@ -264,9 +264,6 @@ class WordExporter implements ReportExporterInterface
         return $this->saveDocument($phpWord, $reportData);
     }
 
-    /**
-     * @see docs/PRD-v2.md section 9.1
-     */
     private function addMonthlyHeader(
         Section $section,
         string $developerName,
@@ -354,8 +351,6 @@ class WordExporter implements ReportExporterInterface
 
     /**
      * @param  array<string, array<int, array<string, mixed>>>  $tasksByProject
-     *
-     * @see docs/PRD-v2.md section 9.2
      */
     private function addProjectSections(Section $section, array $tasksByProject): void
     {
@@ -424,8 +419,6 @@ class WordExporter implements ReportExporterInterface
 
     /**
      * @param  array<int, mixed>  $rawUnclassified
-     *
-     * @see docs/PRD-v2.md section 9.3
      */
     private function addUnclassifiedCommitsSection(Section $section, array $rawUnclassified): void
     {
@@ -465,7 +458,7 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * Add a single task entry in monthly report format (PRD 9.2).
+     * Add a single task entry in monthly report format.
      *
      * @param  array<string, mixed>  $task
      */
