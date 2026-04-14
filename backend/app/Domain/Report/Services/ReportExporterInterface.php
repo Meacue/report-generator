@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\Report\Services;
 
+use App\Domain\Report\DTOs\ReportExportData;
+
 interface ReportExporterInterface
 {
     /**
      * Export report to .docx file.
      *
-     * @param  array<string, mixed>  $reportData
      * @return string Path to generated file
      */
-    public function export(array $reportData): string;
+    public function export(ReportExportData $reportData): string;
 }

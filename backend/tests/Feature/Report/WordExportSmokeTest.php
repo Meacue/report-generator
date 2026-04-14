@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Report;
 
+use App\Domain\Report\DTOs\ReportExportData;
+use App\Domain\Report\DTOs\ReportExportDay;
+use App\Domain\Report\DTOs\ReportExportTask;
 use App\Infrastructure\Report\WordExporter;
 use PhpOffice\PhpWord\Element\AbstractElement;
 use PhpOffice\PhpWord\Element\Section;
@@ -20,42 +23,26 @@ class WordExportSmokeTest extends TestCase
     {
         $exporter = new WordExporter();
 
-        $reportData = [
-            'type'               => 'weekly',
-            'developer_name'     => 'Иванов Иван Иванович',
-            'developer_position' => 'Разработчик',
-            'date_from'          => '2026-03-09',
-            'date_to'            => '2026-03-13',
-            'days'               => [
-                [
-                    'date'      => '2026-03-09',
-                    'narrative' => 'Работал над авторизацией.',
-                    'tasks'     => [
-                        ['title' => 'Задача авторизации', 'narrative' => 'Реализована JWT-авторизация.'],
+        $reportData = new ReportExportData(
+            type: 'weekly',
+            developerName: 'Иванов Иван Иванович',
+            developerPosition: 'Разработчик',
+            dateFrom: '2026-03-09',
+            dateTo: '2026-03-13',
+            days: [
+                new ReportExportDay(
+                    date: '2026-03-09',
+                    tasks: [
+                        new ReportExportTask(title: 'Задача авторизации', narrative: 'Реализована JWT-авторизация.'),
                     ],
-                ],
-                [
-                    'date'      => '2026-03-10',
-                    'narrative' => 'Рефакторинг модулей.',
-                    'tasks'     => [],
-                ],
-                [
-                    'date'      => '2026-03-11',
-                    'narrative' => 'Покрытие тестами.',
-                    'tasks'     => [],
-                ],
-                [
-                    'date'      => '2026-03-12',
-                    'narrative' => 'Ревью кода коллег.',
-                    'tasks'     => [],
-                ],
-                [
-                    'date'      => '2026-03-13',
-                    'narrative' => 'Деплой на staging.',
-                    'tasks'     => [],
-                ],
+                    narrative: 'Работал над авторизацией.',
+                ),
+                new ReportExportDay(date: '2026-03-10', tasks: [], narrative: 'Рефакторинг модулей.'),
+                new ReportExportDay(date: '2026-03-11', tasks: [], narrative: 'Покрытие тестами.'),
+                new ReportExportDay(date: '2026-03-12', tasks: [], narrative: 'Ревью кода коллег.'),
+                new ReportExportDay(date: '2026-03-13', tasks: [], narrative: 'Деплой на staging.'),
             ],
-        ];
+        );
 
         $filePath = $exporter->export($reportData);
         $this->generatedFiles[] = $filePath;
@@ -127,38 +114,38 @@ class WordExportSmokeTest extends TestCase
     {
         $exporter = new WordExporter();
 
-        $reportData = [
-            'type'               => 'monthly',
-            'developer_name'     => 'Петров Пётр Петрович',
-            'developer_position' => 'Senior Developer',
-            'date_from'          => '2026-03-01',
-            'date_to'            => '2026-03-31',
-            'days'               => [
-                [
-                    'date'      => '2026-03-03',
-                    'narrative' => 'Выполнена работа по проекту.',
-                    'tasks'     => [
-                        [
-                            'id'            => 101,
-                            'title'         => 'Реализация API авторизации',
-                            'project_name'  => 'CRM-System',
-                            'narrative'     => 'Разработан REST API для авторизации.',
-                            'status'        => 'completed',
-                            'bitrix24_link' => 'https://bitrix.example.com/tasks/101',
-                        ],
-                        [
-                            'id'            => 102,
-                            'title'         => 'Оптимизация запросов к БД',
-                            'project_name'  => 'CRM-System',
-                            'narrative'     => 'Оптимизированы медленные SQL-запросы.',
-                            'status'        => 'in_progress',
-                            'bitrix24_link' => '',
-                        ],
+        $reportData = new ReportExportData(
+            type: 'monthly',
+            developerName: 'Петров Пётр Петрович',
+            developerPosition: 'Senior Developer',
+            dateFrom: '2026-03-01',
+            dateTo: '2026-03-31',
+            days: [
+                new ReportExportDay(
+                    date: '2026-03-03',
+                    tasks: [
+                        new ReportExportTask(
+                            title: 'Реализация API авторизации',
+                            projectName: 'CRM-System',
+                            narrative: 'Разработан REST API для авторизации.',
+                            id: 101,
+                            status: 'completed',
+                            bitrix24Link: 'https://bitrix.example.com/tasks/101',
+                        ),
+                        new ReportExportTask(
+                            title: 'Оптимизация запросов к БД',
+                            projectName: 'CRM-System',
+                            narrative: 'Оптимизированы медленные SQL-запросы.',
+                            id: 102,
+                            status: 'in_progress',
+                            bitrix24Link: '',
+                        ),
                     ],
-                ],
+                    narrative: 'Выполнена работа по проекту.',
+                ),
             ],
-            'unclassified_commits' => [],
-        ];
+            unclassifiedCommits: [],
+        );
 
         $filePath = $exporter->export($reportData);
         $this->generatedFiles[] = $filePath;
@@ -180,27 +167,27 @@ class WordExportSmokeTest extends TestCase
     {
         $exporter = new WordExporter();
 
-        $reportData = [
-            'type'               => 'daily',
-            'developer_name'     => 'Сидоров Сидор Сидорович',
-            'developer_position' => 'Backend Developer',
-            'date_from'          => '2026-03-10',
-            'date_to'            => '2026-03-10',
-            'days'               => [
-                [
-                    'date'      => '2026-03-10',
-                    'narrative' => 'Выполнена разработка модуля уведомлений.',
-                    'tasks'     => [
-                        [
-                            'number'       => 1,
-                            'title'        => 'Модуль уведомлений',
-                            'project_name' => 'MainProject',
-                            'narrative'    => 'Реализован сервис email-уведомлений.',
-                        ],
+        $reportData = new ReportExportData(
+            type: 'daily',
+            developerName: 'Сидоров Сидор Сидорович',
+            developerPosition: 'Backend Developer',
+            dateFrom: '2026-03-10',
+            dateTo: '2026-03-10',
+            days: [
+                new ReportExportDay(
+                    date: '2026-03-10',
+                    tasks: [
+                        new ReportExportTask(
+                            title: 'Модуль уведомлений',
+                            projectName: 'MainProject',
+                            narrative: 'Реализован сервис email-уведомлений.',
+                            number: 1,
+                        ),
                     ],
-                ],
+                    narrative: 'Выполнена разработка модуля уведомлений.',
+                ),
             ],
-        ];
+        );
 
         $filePath = $exporter->export($reportData);
         $this->generatedFiles[] = $filePath;
@@ -213,14 +200,14 @@ class WordExportSmokeTest extends TestCase
     {
         $exporter = new WordExporter();
 
-        $reportData = [
-            'type'               => 'weekly',
-            'developer_name'     => 'Козлов Козёл Козлович',
-            'developer_position' => 'Developer',
-            'date_from'          => '2026-03-09',
-            'date_to'            => '2026-03-13',
-            'days'               => [],
-        ];
+        $reportData = new ReportExportData(
+            type: 'weekly',
+            developerName: 'Козлов Козёл Козлович',
+            developerPosition: 'Developer',
+            dateFrom: '2026-03-09',
+            dateTo: '2026-03-13',
+            days: [],
+        );
 
         $filePath = $exporter->export($reportData);
         $this->generatedFiles[] = $filePath;
