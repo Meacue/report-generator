@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Report;
 
+use App\Domain\Report\DTOs\ReportExportData;
+use App\Domain\Report\DTOs\ReportExportDay;
+use App\Domain\Report\DTOs\ReportExportTask;
+use App\Domain\Report\DTOs\ReportExportUnclassifiedCommit;
 use App\Domain\Report\Services\ReportExporterInterface;
 use PhpOffice\PhpWord\ComplexType\TblWidth as ComplexTblWidth;
 use PhpOffice\PhpWord\Element\Cell;
@@ -67,26 +71,18 @@ class WordExporter implements ReportExporterInterface
     /**
      * Export report to .docx file.
      *
-     * @param  array<string, mixed>  $reportData
      * @return string Path to generated file
      */
-    public function export(array $reportData): string
+    public function export(ReportExportData $reportData): string
     {
-        $type = $this->str($reportData['type'] ?? 'custom');
-
-        return match ($type) {
+        return match ($reportData->type) {
             'weekly'  => $this->exportWeekly($reportData),
             'monthly' => $this->exportMonthly($reportData),
             default   => $this->exportDefault($reportData),
         };
     }
 
-    /**
-     * Export weekly report matching report-blank.docx template exactly.
-     *
-     * @param  array<string, mixed>  $reportData
-     */
-    private function exportWeekly(array $reportData): string
+    private function exportWeekly(ReportExportData $reportData): string
     {
         $phpWord = new PhpWord();
 
@@ -113,13 +109,10 @@ class WordExporter implements ReportExporterInterface
 
         $section->addTextBreak();
 
-        $developerName = $this->str($reportData['developer_name'] ?? '_______________');
-        $developerPosition = $this->str($reportData['developer_position'] ?? '_______________');
-        $dateFrom = $this->str($reportData['date_from'] ?? '___________');
-        $dateTo = $this->str($reportData['date_to'] ?? '___________');
-
-        /** @var array<int, mixed> $rawDays */
-        $rawDays = is_array($reportData['days'] ?? null) ? $reportData['days'] : [];
+        $developerName = $reportData->developerName !== '' ? $reportData->developerName : '_______________';
+        $developerPosition = $reportData->developerPosition !== '' ? $reportData->developerPosition : '_______________';
+        $dateFrom = $reportData->dateFrom !== '' ? $reportData->dateFrom : '___________';
+        $dateTo = $reportData->dateTo !== '' ? $reportData->dateTo : '___________';
 
         $tableStyle = [
             'borderSize'  => self::WEEKLY_BORDER_SIZE,
@@ -136,7 +129,7 @@ class WordExporter implements ReportExporterInterface
         $table = $section->addTable($tableStyle);
 
         $this->addWeeklyEmployeeHeaderRow($table, $developerName, $developerPosition, $dateFrom, $dateTo, $fontStyle, $paragraphStyle);
-        $this->addWeeklyDayRows($table, $rawDays, $fontStyle, $fontBold, $paragraphStyle);
+        $this->addWeeklyDayRows($table, $reportData->days, $fontStyle, $fontBold, $paragraphStyle);
 
         return $this->saveDocument($phpWord, $reportData);
     }
@@ -164,14 +157,14 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * @param  array<int, mixed>  $rawDays
+     * @param  list<ReportExportDay>  $days
      * @param  array<string, mixed>  $fontStyle
      * @param  array<string, mixed>  $fontBold
      * @param  array<string, mixed>  $paragraphStyle
      */
     private function addWeeklyDayRows(
         Table $table,
-        array $rawDays,
+        array $days,
         array $fontStyle,
         array $fontBold,
         array $paragraphStyle,
@@ -182,32 +175,20 @@ class WordExporter implements ReportExporterInterface
             $table->addRow();
             $dayCell = $table->addCell(self::WEEKLY_TABLE_WIDTH, ['valign' => 'top']);
 
-            $rawDay = $rawDays[$i] ?? null;
+            $day = $days[$i] ?? null;
 
-            /** @var array<string, mixed>|null $dayData */
-            $dayData = is_array($rawDay) ? $rawDay : null;
-
-            if ($dayData !== null) {
+            if ($day !== null) {
                 $dayName = $russianDays[$i];
-                $date = $this->str($dayData['date'] ?? '');
-                $formattedDate = $this->formatDateShort($date);
+                $formattedDate = $this->formatDateShort($day->date);
                 $this->addTextToCell($dayCell, "{$dayName}, {$formattedDate}:", $fontBold, $paragraphStyle);
 
-                /** @var array<int, mixed> $rawTasks */
-                $rawTasks = is_array($dayData['tasks'] ?? null) ? $dayData['tasks'] : [];
-
-                foreach ($rawTasks as $rawTask) {
-                    /** @var array<string, mixed> $task */
-                    $task = is_array($rawTask) ? $rawTask : [];
-                    $taskTitle = $this->str($task['title'] ?? '');
-                    $taskNarrative = $this->str($task['narrative'] ?? '');
-
-                    if ($taskTitle !== '') {
-                        $this->addTextToCell($dayCell, "• {$taskTitle}", $fontBold, $paragraphStyle);
+                foreach ($day->tasks as $task) {
+                    if ($task->title !== '') {
+                        $this->addTextToCell($dayCell, "• {$task->title}", $fontBold, $paragraphStyle);
                     }
 
-                    if ($taskNarrative !== '') {
-                        $this->addTextToCell($dayCell, "  {$taskNarrative}", $fontStyle, $paragraphStyle);
+                    if ($task->narrative !== '') {
+                        $this->addTextToCell($dayCell, "  {$task->narrative}", $fontStyle, $paragraphStyle);
                     }
                 }
             } else {
@@ -230,36 +211,20 @@ class WordExporter implements ReportExporterInterface
         $this->addTextToCell($cell, '', $fontStyle, $paragraphStyle);
     }
 
-    /**
-     * Export monthly report grouped by project.
-     *
-     * @param  array<string, mixed>  $reportData
-     */
-    private function exportMonthly(array $reportData): string
+    private function exportMonthly(ReportExportData $reportData): string
     {
         $phpWord = $this->createPhpWord();
         $section = $this->createSection($phpWord);
 
-        $developerName = $this->str($reportData['developer_name'] ?? 'Разработчик');
-        $developerPosition = $this->str($reportData['developer_position'] ?? '');
-        $dateFrom = $this->str($reportData['date_from'] ?? '');
-        $dateTo = $this->str($reportData['date_to'] ?? '');
+        $developerName = $reportData->developerName !== '' ? $reportData->developerName : 'Разработчик';
 
-        /** @var array<int, mixed> $rawDays */
-        $rawDays = is_array($reportData['days'] ?? null) ? $reportData['days'] : [];
+        $this->addMonthlyHeader($section, $developerName, $reportData->developerPosition, $reportData->dateFrom, $reportData->dateTo);
 
-        $this->addMonthlyHeader($section, $developerName, $developerPosition, $dateFrom, $dateTo);
-
-        $grouped = $this->groupTasksByProject($rawDays);
-        $this->addStatsLine($section, $grouped['totalTasks'], count($rawDays));
+        $grouped = $this->groupTasksByProject($reportData->days);
+        $this->addStatsLine($section, $grouped['totalTasks'], count($reportData->days));
         $this->addProjectSections($section, $grouped['tasksByProject']);
 
-        /** @var array<int, mixed> $rawUnclassified */
-        $rawUnclassified = is_array($reportData['unclassified_commits'] ?? null)
-            ? $reportData['unclassified_commits']
-            : [];
-
-        $this->addUnclassifiedCommitsSection($section, $rawUnclassified);
+        $this->addUnclassifiedCommitsSection($section, $reportData->unclassifiedCommits ?? []);
 
         return $this->saveDocument($phpWord, $reportData);
     }
@@ -293,37 +258,24 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * @param  array<int, mixed>  $rawDays
-     * @return array{tasksByProject: array<string, array<int, array<string, mixed>>>, totalTasks: int}
+     * @param  list<ReportExportDay>  $days
+     * @return array{tasksByProject: array<string, list<ReportExportTask>>, totalTasks: int}
      */
-    private function groupTasksByProject(array $rawDays): array
+    private function groupTasksByProject(array $days): array
     {
-        /** @var array<string, array<int, array<string, mixed>>> $tasksByProject */
+        /** @var array<string, list<ReportExportTask>> $tasksByProject */
         $tasksByProject = [];
         $totalTasks = 0;
 
-        foreach ($rawDays as $rawDay) {
-            /** @var array<string, mixed> $day */
-            $day = is_array($rawDay) ? $rawDay : [];
+        foreach ($days as $day) {
+            foreach ($day->tasks as $task) {
+                $projectName = $task->projectName !== '' ? $task->projectName : 'Без проекта';
 
-            /** @var array<int, mixed> $rawTasks */
-            $rawTasks = is_array($day['tasks'] ?? null) ? $day['tasks'] : [];
-
-            foreach ($rawTasks as $rawTask) {
-                /** @var array<string, mixed> $task */
-                $task = is_array($rawTask) ? $rawTask : [];
-
-                $projectNameRaw = $task['project_name'] ?? null;
-                $projectName = is_string($projectNameRaw) && $projectNameRaw !== ''
-                    ? $projectNameRaw
-                    : 'Без проекта';
-
-                $taskTitle = $this->str($task['title'] ?? '');
                 $alreadyAdded = false;
 
                 if (isset($tasksByProject[$projectName])) {
                     foreach ($tasksByProject[$projectName] as $existing) {
-                        if ($this->str($existing['title'] ?? '') === $taskTitle) {
+                        if ($existing->title === $task->title) {
                             $alreadyAdded = true;
                             break;
                         }
@@ -350,7 +302,7 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * @param  array<string, array<int, array<string, mixed>>>  $tasksByProject
+     * @param  array<string, list<ReportExportTask>>  $tasksByProject
      */
     private function addProjectSections(Section $section, array $tasksByProject): void
     {
@@ -380,7 +332,7 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $tasks
+     * @param  list<ReportExportTask>  $tasks
      */
     private function addTasksByStatus(
         Section $section,
@@ -398,7 +350,7 @@ class WordExporter implements ReportExporterInterface
         $hasEntries = false;
 
         foreach ($tasks as $task) {
-            $isCompleted = $this->str($task['status'] ?? '') === 'completed';
+            $isCompleted = ($task->status ?? '') === 'completed';
 
             if ($completed !== $isCompleted) {
                 continue;
@@ -418,11 +370,11 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * @param  array<int, mixed>  $rawUnclassified
+     * @param  list<ReportExportUnclassifiedCommit>  $unclassifiedCommits
      */
-    private function addUnclassifiedCommitsSection(Section $section, array $rawUnclassified): void
+    private function addUnclassifiedCommitsSection(Section $section, array $unclassifiedCommits): void
     {
-        if ($rawUnclassified === []) {
+        if ($unclassifiedCommits === []) {
             return;
         }
 
@@ -436,17 +388,11 @@ class WordExporter implements ReportExporterInterface
 
         $this->addSeparatorLine($section, spaceBefore: 0, spaceAfter: 120);
 
-        foreach ($rawUnclassified as $rawCommit) {
-            /** @var array<string, mixed> $commit */
-            $commit = is_array($rawCommit) ? $rawCommit : [];
-            $repo = $this->str($commit['repo'] ?? '');
-            $message = $this->str($commit['message'] ?? '');
-            $branch = $this->str($commit['branch'] ?? '');
+        foreach ($unclassifiedCommits as $commit) {
+            $line = "• [repo: {$commit->repo}] {$commit->message}";
 
-            $line = "• [repo: {$repo}] {$message}";
-
-            if ($branch !== '') {
-                $line .= " (branch: {$branch})";
+            if ($commit->branch !== '') {
+                $line .= " (branch: {$commit->branch})";
             }
 
             $section->addText(
@@ -457,50 +403,34 @@ class WordExporter implements ReportExporterInterface
         }
     }
 
-    /**
-     * Add a single task entry in monthly report format.
-     *
-     * @param  array<string, mixed>  $task
-     */
-    private function addMonthlyTaskEntry(Section $section, array $task): void
+    private function addMonthlyTaskEntry(Section $section, ReportExportTask $task): void
     {
-        $taskIdRaw = $task['id'] ?? null;
-        $taskId = $taskIdRaw !== null ? $this->str($taskIdRaw) : '';
-        $title = $this->str($task['title'] ?? '');
-        $narrative = $this->str($task['narrative'] ?? '');
-        $link = $this->str($task['bitrix24_link'] ?? '');
-
-        $idPrefix = $taskId !== '' ? "Задача #{$taskId} — " : '';
+        $idPrefix = $task->id !== null ? "Задача #{$task->id} — " : '';
 
         $section->addText(
-            "  • {$idPrefix}{$title}",
+            "  • {$idPrefix}{$task->title}",
             ['name'       => self::FONT_MAIN, 'size' => self::SIZE_MAIN / 2, 'bold' => true],
             ['spaceAfter' => 0, 'indentation' => ['left' => self::INDENT_FIRST_LINE]]
         );
 
-        if ($link !== '') {
+        if ($task->bitrix24Link !== null && $task->bitrix24Link !== '') {
             $section->addText(
-                "    {$link}",
+                "    {$task->bitrix24Link}",
                 ['name'       => self::FONT_MAIN, 'size' => self::SIZE_MAIN / 2],
                 ['spaceAfter' => 0, 'indentation' => ['left' => self::INDENT_FIRST_LINE]]
             );
         }
 
-        if ($narrative !== '') {
+        if ($task->narrative !== '') {
             $section->addText(
-                "    {$narrative}",
+                "    {$task->narrative}",
                 ['name'       => self::FONT_MAIN, 'size' => self::SIZE_MAIN / 2],
                 ['spaceAfter' => 60, 'indentation' => ['left' => self::INDENT_FIRST_LINE]]
             );
         }
     }
 
-    /**
-     * Export default report (daily / custom) — original format with task tables.
-     *
-     * @param  array<string, mixed>  $reportData
-     */
-    private function exportDefault(array $reportData): string
+    private function exportDefault(ReportExportData $reportData): string
     {
         $phpWord = $this->createPhpWord();
         $section = $this->createSection($phpWord);
@@ -541,16 +471,8 @@ class WordExporter implements ReportExporterInterface
         ]);
     }
 
-    /**
-     * @param  array<string, mixed>  $reportData
-     */
-    private function addHeader(Section $section, array $reportData): void
+    private function addHeader(Section $section, ReportExportData $reportData): void
     {
-        $developerName = $this->str($reportData['developer_name'] ?? '');
-        $developerPosition = $this->str($reportData['developer_position'] ?? '');
-        $dateFrom = $this->str($reportData['date_from'] ?? '');
-        $dateTo = $this->str($reportData['date_to'] ?? '');
-
         $titleParagraph = $section->addTextRun([
             'alignment'  => Jc::CENTER,
             'spaceAfter' => 120,
@@ -569,7 +491,7 @@ class WordExporter implements ReportExporterInterface
             'spaceAfter' => 120,
         ]);
         $periodParagraph->addText(
-            'Период: ' . $dateFrom . ' — ' . $dateTo,
+            'Период: ' . $reportData->dateFrom . ' — ' . $reportData->dateTo,
             [
                 'name' => self::FONT_MAIN,
                 'size' => self::SIZE_MAIN / 2,
@@ -581,7 +503,7 @@ class WordExporter implements ReportExporterInterface
             'spaceAfter' => 240,
         ]);
         $developerParagraph->addText(
-            'Разработчик: ' . $developerName . ', ' . $developerPosition,
+            'Разработчик: ' . $reportData->developerName . ', ' . $reportData->developerPosition,
             [
                 'name' => self::FONT_MAIN,
                 'size' => self::SIZE_MAIN / 2,
@@ -589,42 +511,21 @@ class WordExporter implements ReportExporterInterface
         );
     }
 
-    /**
-     * @param  array<string, mixed>  $reportData
-     */
-    private function addDays(Section $section, array $reportData): void
+    private function addDays(Section $section, ReportExportData $reportData): void
     {
-        /** @var array<int, mixed> $rawDays */
-        $rawDays = is_array($reportData['days'] ?? null) ? $reportData['days'] : [];
-
-        foreach ($rawDays as $rawDay) {
-            /** @var array<string, mixed> $day */
-            $day = is_array($rawDay) ? $rawDay : [];
+        foreach ($reportData->days as $day) {
             $this->addDaySection($section, $day);
         }
     }
 
-    /**
-     * @param  array<string, mixed>  $day
-     */
-    private function addDaySection(Section $section, array $day): void
+    private function addDaySection(Section $section, ReportExportDay $day): void
     {
-        $date = $this->str($day['date'] ?? '');
-        /** @var array<int, mixed> $rawTasks */
-        $rawTasks = is_array($day['tasks'] ?? null) ? $day['tasks'] : [];
-
-        /** @var array<int, array<string, mixed>> $tasks */
-        $tasks = array_values(array_filter(
-            array_map(static fn (mixed $t): mixed => is_array($t) ? $t : null, $rawTasks),
-            static fn (mixed $t): bool => $t !== null,
-        ));
-
         $dayHeading = $section->addTextRun([
             'spaceAfter'  => 120,
             'spaceBefore' => 240,
         ]);
         $dayHeading->addText(
-            $this->formatDate($date),
+            $this->formatDate($day->date),
             [
                 'name' => self::FONT_MAIN,
                 'size' => self::SIZE_HEADING2 / 2,
@@ -632,13 +533,13 @@ class WordExporter implements ReportExporterInterface
             ]
         );
 
-        if ($tasks !== []) {
-            $this->addTasksTable($section, $tasks);
+        if ($day->tasks !== []) {
+            $this->addTasksTable($section, $day->tasks);
         }
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $tasks
+     * @param  list<ReportExportTask>  $tasks
      */
     private function addTasksTable(Section $section, array $tasks): void
     {
@@ -681,36 +582,22 @@ class WordExporter implements ReportExporterInterface
         $headerRow->addCell(null, $headerCellStyle)->addText('Описание работ', $headerFontStyle, $cellParagraphStyle);
 
         foreach ($tasks as $task) {
-            $number = $this->str($task['number'] ?? '');
-            $title = $this->str($task['title'] ?? '');
-            $projectName = $this->str($task['project_name'] ?? '');
-            $taskNarrative = $this->str($task['narrative'] ?? '');
+            $number = $task->number !== null ? (string) $task->number : '';
 
             $row = $table->addRow();
             $row->addCell(500)->addText($number, $cellFontStyle, $cellParagraphStyle);
-            $row->addCell(3000)->addText($title, $cellFontStyle, $cellParagraphStyle);
-            $row->addCell(2000)->addText($projectName, $cellFontStyle, $cellParagraphStyle);
-            $row->addCell(null)->addText($taskNarrative, $cellFontStyle, $cellParagraphStyle);
+            $row->addCell(3000)->addText($task->title, $cellFontStyle, $cellParagraphStyle);
+            $row->addCell(2000)->addText($task->projectName, $cellFontStyle, $cellParagraphStyle);
+            $row->addCell(null)->addText($task->narrative, $cellFontStyle, $cellParagraphStyle);
         }
     }
 
-    /**
-     * @param  array<string, mixed>  $reportData
-     */
-    private function addSummary(Section $section, array $reportData): void
+    private function addSummary(Section $section, ReportExportData $reportData): void
     {
-        /** @var array<int, mixed> $rawDays */
-        $rawDays = is_array($reportData['days'] ?? null) ? $reportData['days'] : [];
-
         $totalTasks = 0;
 
-        foreach ($rawDays as $rawDay) {
-            /** @var array<string, mixed> $day */
-            $day = is_array($rawDay) ? $rawDay : [];
-
-            /** @var array<int, mixed> $dayTasks */
-            $dayTasks = is_array($day['tasks'] ?? null) ? $day['tasks'] : [];
-            $totalTasks += count($dayTasks);
+        foreach ($reportData->days as $day) {
+            $totalTasks += count($day->tasks);
         }
 
         $summaryHeading = $section->addTextRun([
@@ -731,7 +618,7 @@ class WordExporter implements ReportExporterInterface
             'spaceAfter'  => 120,
         ]);
         $statsParagraph->addText(
-            'Всего задач: ' . $totalTasks . '   |   Рабочих дней: ' . count($rawDays),
+            'Всего задач: ' . $totalTasks . '   |   Рабочих дней: ' . count($reportData->days),
             [
                 'name' => self::FONT_MAIN,
                 'size' => self::SIZE_MAIN / 2,
@@ -739,10 +626,7 @@ class WordExporter implements ReportExporterInterface
         );
     }
 
-    /**
-     * @param  array<string, mixed>  $reportData
-     */
-    private function saveDocument(PhpWord $phpWord, array $reportData): string
+    private function saveDocument(PhpWord $phpWord, ReportExportData $reportData): string
     {
         $reportsDir = storage_path('app/reports');
 
@@ -750,8 +634,8 @@ class WordExporter implements ReportExporterInterface
             throw new RuntimeException('Failed to create reports directory: ' . $reportsDir);
         }
 
-        $dateFrom = $this->str($reportData['date_from'] ?? 'unknown');
-        $dateTo = $this->str($reportData['date_to'] ?? 'unknown');
+        $dateFrom = $reportData->dateFrom !== '' ? $reportData->dateFrom : 'unknown';
+        $dateTo = $reportData->dateTo !== '' ? $reportData->dateTo : 'unknown';
         $filename = 'report-' . $dateFrom . '-' . $dateTo . '.docx';
         $filePath = $reportsDir . DIRECTORY_SEPARATOR . $filename;
 
@@ -770,22 +654,6 @@ class WordExporter implements ReportExporterInterface
     private function addTextToCell(Cell $cell, string $text, array $fontStyle, array $paragraphStyle): void
     {
         $cell->addText($text, $fontStyle, $paragraphStyle);
-    }
-
-    /**
-     * Safely convert a mixed value to string.
-     */
-    private function str(mixed $value): string
-    {
-        if (is_string($value)) {
-            return $value;
-        }
-
-        if (is_int($value) || is_float($value) || is_bool($value)) {
-            return (string) $value;
-        }
-
-        return '';
     }
 
     private function formatDate(string $date): string
