@@ -10,11 +10,14 @@ use App\Domain\Narrative\Actions\RegenerateDayNarrative;
 use App\Domain\Narrative\Actions\RegenerateTaskNarrative;
 use App\Domain\Narrative\Actions\UndoDayNarrative;
 use App\Domain\Narrative\Actions\UndoTaskNarrative;
+use App\Domain\Matching\DTOs\UnclassifiedCommit;
+use App\Domain\Matching\Queries\GetUnclassifiedCommitsForDateRange;
 use App\Domain\Report\Actions\GenerateReport;
 use App\Domain\Report\DTOs\ReportExportData;
 use App\Domain\Report\DTOs\ReportExportDay;
 use App\Domain\Report\DTOs\ReportExportMonthlyData;
 use App\Domain\Report\DTOs\ReportExportTask;
+use App\Domain\Report\DTOs\ReportExportUnclassifiedCommit;
 use App\Domain\Report\Queries\GetMonthlyReportData;
 use App\Domain\Report\Queries\GetReportPreview;
 use App\Domain\Report\Queries\HasDataForDateRange;
@@ -218,6 +221,7 @@ class ReportController extends Controller
         Report $report,
         GetReportPreview $getPreview,
         GetMonthlyReportData $getMonthlyData,
+        GetUnclassifiedCommitsForDateRange $getUnclassified,
     ): BinaryFileResponse {
         $report->guardExportable();
 
@@ -228,14 +232,22 @@ class ReportController extends Controller
         $developerPosition = $settings !== null ? ($settings->developer_position ?? '') : '';
 
         if ($preview['type'] === 'monthly') {
+            $unclassified = $getUnclassified($report->getDateRange());
+
             $monthlyData = new ReportExportMonthlyData(
                 developerName: $developerName,
                 developerPosition: $developerPosition,
                 dateFrom: $preview['date_from'],
                 dateTo: $preview['date_to'],
                 days: $getMonthlyData($report),
-                // TODO: populate via GetUnclassifiedCommits query (Commit + MatchResult)
-                unclassifiedCommits: [],
+                unclassifiedCommits: array_map(
+                    static fn (UnclassifiedCommit $c): ReportExportUnclassifiedCommit => new ReportExportUnclassifiedCommit(
+                        repo: $c->repoName,
+                        message: $c->message,
+                        branch: $c->branchName,
+                    ),
+                    $unclassified,
+                ),
             );
 
             $filePath = $this->exporter->exportMonthly($monthlyData);
