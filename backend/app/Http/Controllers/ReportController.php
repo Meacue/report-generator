@@ -13,7 +13,9 @@ use App\Domain\Narrative\Actions\UndoTaskNarrative;
 use App\Domain\Report\Actions\GenerateReport;
 use App\Domain\Report\DTOs\ReportExportData;
 use App\Domain\Report\DTOs\ReportExportDay;
+use App\Domain\Report\DTOs\ReportExportMonthlyData;
 use App\Domain\Report\DTOs\ReportExportTask;
+use App\Domain\Report\Queries\GetMonthlyReportData;
 use App\Domain\Report\Queries\GetReportPreview;
 use App\Domain\Report\Queries\HasDataForDateRange;
 use App\Exceptions\NoDataException;
@@ -212,8 +214,11 @@ class ReportController extends Controller
     /**
      * Export report as .docx.
      */
-    public function export(Report $report, GetReportPreview $getPreview): BinaryFileResponse
-    {
+    public function export(
+        Report $report,
+        GetReportPreview $getPreview,
+        GetMonthlyReportData $getMonthlyData,
+    ): BinaryFileResponse {
         $report->guardExportable();
 
         $preview = $getPreview($report);
@@ -222,46 +227,57 @@ class ReportController extends Controller
         $developerName = $settings !== null ? ($settings->developer_name ?? 'Разработчик') : 'Разработчик';
         $developerPosition = $settings !== null ? ($settings->developer_position ?? '') : '';
 
-        /** @var array<int, array{date: string, narrative: string|null, source: string, is_edited: bool, tasks: array<int, array{id: int|null, title: string, project_name: string|null, narrative: string|null, is_edited: bool}>}> $days */
-        $days = $preview['days'];
+        if ($preview['type'] === 'monthly') {
+            $monthlyData = new ReportExportMonthlyData(
+                developerName: $developerName,
+                developerPosition: $developerPosition,
+                dateFrom: $preview['date_from'],
+                dateTo: $preview['date_to'],
+                days: $getMonthlyData($report),
+                // TODO: populate via GetUnclassifiedCommits query (Commit + MatchResult)
+                unclassifiedCommits: [],
+            );
 
-        /** @var list<ReportExportDay> $mappedDays */
-        $mappedDays = [];
+            $filePath = $this->exporter->exportMonthly($monthlyData);
+        } else {
+            /** @var array<int, array{date: string, narrative: string|null, source: string, is_edited: bool, tasks: array<int, array{id: int|null, title: string, project_name: string|null, narrative: string|null, is_edited: bool}>}> $days */
+            $days = $preview['days'];
 
-        foreach ($days as $day) {
-            /** @var list<ReportExportTask> $mappedTasks */
-            $mappedTasks = [];
-            $taskNumber = 1;
+            /** @var list<ReportExportDay> $mappedDays */
+            $mappedDays = [];
 
-            foreach ($day['tasks'] as $task) {
-                $mappedTasks[] = new ReportExportTask(
-                    title: $task['title'],
-                    projectName: $task['project_name'] ?? '',
-                    narrative: $task['narrative'] ?? '',
-                    number: $taskNumber,
+            foreach ($days as $day) {
+                /** @var list<ReportExportTask> $mappedTasks */
+                $mappedTasks = [];
+                $taskNumber = 1;
+
+                foreach ($day['tasks'] as $task) {
+                    $mappedTasks[] = new ReportExportTask(
+                        title: $task['title'],
+                        projectName: $task['project_name'] ?? '',
+                        narrative: $task['narrative'] ?? '',
+                        number: $taskNumber,
+                    );
+                    $taskNumber++;
+                }
+
+                $mappedDays[] = new ReportExportDay(
+                    date: $day['date'],
+                    tasks: $mappedTasks,
                 );
-                $taskNumber++;
             }
 
-            $mappedDays[] = new ReportExportDay(
-                date: $day['date'],
-                tasks: $mappedTasks,
+            $reportData = new ReportExportData(
+                type: $preview['type'],
+                developerName: $developerName,
+                developerPosition: $developerPosition,
+                dateFrom: $preview['date_from'],
+                dateTo: $preview['date_to'],
+                days: $mappedDays,
             );
+
+            $filePath = $this->exporter->exportStandard($reportData);
         }
-
-        // Controller currently supports standard (weekly/daily/custom) reports only.
-        // TODO: add monthly-path mapping (ReportExportMonthlyData + MonthlyDay + MonthlyTask)
-        // and call $this->exporter->exportMonthly(...) when $preview['type'] === 'monthly'.
-        $reportData = new ReportExportData(
-            type: $preview['type'],
-            developerName: $developerName,
-            developerPosition: $developerPosition,
-            dateFrom: $preview['date_from'],
-            dateTo: $preview['date_to'],
-            days: $mappedDays,
-        );
-
-        $filePath = $this->exporter->exportStandard($reportData);
 
         $report->markAsExported();
 
