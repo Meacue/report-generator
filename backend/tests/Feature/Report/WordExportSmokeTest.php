@@ -6,6 +6,9 @@ namespace Tests\Feature\Report;
 
 use App\Domain\Report\DTOs\ReportExportData;
 use App\Domain\Report\DTOs\ReportExportDay;
+use App\Domain\Report\DTOs\ReportExportMonthlyData;
+use App\Domain\Report\DTOs\ReportExportMonthlyDay;
+use App\Domain\Report\DTOs\ReportExportMonthlyTask;
 use App\Domain\Report\DTOs\ReportExportTask;
 use App\Infrastructure\Report\WordExporter;
 use PhpOffice\PhpWord\Element\AbstractElement;
@@ -44,7 +47,7 @@ class WordExportSmokeTest extends TestCase
             ],
         );
 
-        $filePath = $exporter->export($reportData);
+        $filePath = $exporter->exportStandard($reportData);
         $this->generatedFiles[] = $filePath;
 
         $this->assertFileExists($filePath);
@@ -114,28 +117,31 @@ class WordExportSmokeTest extends TestCase
     {
         $exporter = new WordExporter();
 
-        $reportData = new ReportExportData(
-            type: 'monthly',
+        $reportData = new ReportExportMonthlyData(
             developerName: 'Петров Пётр Петрович',
             developerPosition: 'Senior Developer',
             dateFrom: '2026-03-01',
             dateTo: '2026-03-31',
             days: [
-                new ReportExportDay(
+                new ReportExportMonthlyDay(
                     date: '2026-03-03',
                     tasks: [
-                        new ReportExportTask(
-                            title: 'Реализация API авторизации',
-                            projectName: 'CRM-System',
-                            narrative: 'Разработан REST API для авторизации.',
+                        new ReportExportMonthlyTask(
+                            base: new ReportExportTask(
+                                title: 'Реализация API авторизации',
+                                projectName: 'CRM-System',
+                                narrative: 'Разработан REST API для авторизации.',
+                            ),
                             id: 101,
                             status: 'completed',
                             bitrix24Link: 'https://bitrix.example.com/tasks/101',
                         ),
-                        new ReportExportTask(
-                            title: 'Оптимизация запросов к БД',
-                            projectName: 'CRM-System',
-                            narrative: 'Оптимизированы медленные SQL-запросы.',
+                        new ReportExportMonthlyTask(
+                            base: new ReportExportTask(
+                                title: 'Оптимизация запросов к БД',
+                                projectName: 'CRM-System',
+                                narrative: 'Оптимизированы медленные SQL-запросы.',
+                            ),
                             id: 102,
                             status: 'in_progress',
                             bitrix24Link: '',
@@ -147,7 +153,7 @@ class WordExportSmokeTest extends TestCase
             unclassifiedCommits: [],
         );
 
-        $filePath = $exporter->export($reportData);
+        $filePath = $exporter->exportMonthly($reportData);
         $this->generatedFiles[] = $filePath;
 
         $this->assertFileExists($filePath);
@@ -189,7 +195,7 @@ class WordExportSmokeTest extends TestCase
             ],
         );
 
-        $filePath = $exporter->export($reportData);
+        $filePath = $exporter->exportStandard($reportData);
         $this->generatedFiles[] = $filePath;
 
         $this->assertFileExists($filePath);
@@ -209,7 +215,7 @@ class WordExportSmokeTest extends TestCase
             days: [],
         );
 
-        $filePath = $exporter->export($reportData);
+        $filePath = $exporter->exportStandard($reportData);
         $this->generatedFiles[] = $filePath;
 
         $this->assertFileExists($filePath);

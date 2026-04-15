@@ -32,7 +32,7 @@ class TestWordExport extends Command
 
         $reportData = $this->buildTestData();
 
-        $filePath = $exporter->export($reportData);
+        $filePath = $exporter->exportStandard($reportData);
 
         $this->info('Report generated successfully!');
         $this->line('File path: ' . $filePath);
