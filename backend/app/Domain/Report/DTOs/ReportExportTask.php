@@ -11,9 +11,6 @@ final readonly class ReportExportTask
         public string $projectName = '',
         public string $narrative = '',
         public int|string|null $number = null,
-        public ?int $id = null,
-        public ?string $status = null,
-        public ?string $bitrix24Link = null,
     ) {
     }
 }

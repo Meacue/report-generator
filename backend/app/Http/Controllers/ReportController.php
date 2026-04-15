@@ -249,6 +249,9 @@ class ReportController extends Controller
             );
         }
 
+        // Controller currently supports standard (weekly/daily/custom) reports only.
+        // TODO: add monthly-path mapping (ReportExportMonthlyData + MonthlyDay + MonthlyTask)
+        // and call $this->exporter->exportMonthly(...) when $preview['type'] === 'monthly'.
         $reportData = new ReportExportData(
             type: $preview['type'],
             developerName: $developerName,
@@ -258,7 +261,7 @@ class ReportController extends Controller
             days: $mappedDays,
         );
 
-        $filePath = $this->exporter->export($reportData);
+        $filePath = $this->exporter->exportStandard($reportData);
 
         $report->markAsExported();
 

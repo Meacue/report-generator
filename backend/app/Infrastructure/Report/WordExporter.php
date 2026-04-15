@@ -6,6 +6,9 @@ namespace App\Infrastructure\Report;
 
 use App\Domain\Report\DTOs\ReportExportData;
 use App\Domain\Report\DTOs\ReportExportDay;
+use App\Domain\Report\DTOs\ReportExportMonthlyData;
+use App\Domain\Report\DTOs\ReportExportMonthlyDay;
+use App\Domain\Report\DTOs\ReportExportMonthlyTask;
 use App\Domain\Report\DTOs\ReportExportTask;
 use App\Domain\Report\DTOs\ReportExportUnclassifiedCommit;
 use App\Domain\Report\Services\ReportExporterInterface;
@@ -69,20 +72,37 @@ class WordExporter implements ReportExporterInterface
     private const PAGE_HEIGHT_A4 = 16834;
 
     /**
-     * Export report to .docx file.
+     * Export standard report (weekly / daily / custom) to .docx file.
      *
-     * @return string Path to generated file
+     * Dispatches rendering by `type` — value-based discriminator, not type-based.
      */
-    public function export(ReportExportData $reportData): string
+    public function exportStandard(ReportExportData $reportData): string
     {
         return match ($reportData->type) {
-            'weekly'  => $this->exportWeekly($reportData),
-            'monthly' => $this->exportMonthly($reportData),
-            default   => $this->exportDefault($reportData),
+            'weekly' => $this->renderWeekly($reportData),
+            default  => $this->renderDefault($reportData),
         };
     }
 
-    private function exportWeekly(ReportExportData $reportData): string
+    public function exportMonthly(ReportExportMonthlyData $reportData): string
+    {
+        $phpWord = $this->createPhpWord();
+        $section = $this->createSection($phpWord);
+
+        $developerName = $reportData->developerName !== '' ? $reportData->developerName : 'Разработчик';
+
+        $this->addMonthlyHeader($section, $developerName, $reportData->developerPosition, $reportData->dateFrom, $reportData->dateTo);
+
+        $grouped = $this->groupTasksByProject($reportData->days);
+        $this->addStatsLine($section, $grouped['totalTasks'], count($reportData->days));
+        $this->addProjectSections($section, $grouped['tasksByProject']);
+
+        $this->addUnclassifiedCommitsSection($section, $reportData->unclassifiedCommits);
+
+        return $this->saveDocument($phpWord, $reportData->dateFrom, $reportData->dateTo);
+    }
+
+    private function renderWeekly(ReportExportData $reportData): string
     {
         $phpWord = new PhpWord();
 
@@ -131,7 +151,7 @@ class WordExporter implements ReportExporterInterface
         $this->addWeeklyEmployeeHeaderRow($table, $developerName, $developerPosition, $dateFrom, $dateTo, $fontStyle, $paragraphStyle);
         $this->addWeeklyDayRows($table, $reportData->days, $fontStyle, $fontBold, $paragraphStyle);
 
-        return $this->saveDocument($phpWord, $reportData);
+        return $this->saveDocument($phpWord, $reportData->dateFrom, $reportData->dateTo);
     }
 
     /**
@@ -211,24 +231,6 @@ class WordExporter implements ReportExporterInterface
         $this->addTextToCell($cell, '', $fontStyle, $paragraphStyle);
     }
 
-    private function exportMonthly(ReportExportData $reportData): string
-    {
-        $phpWord = $this->createPhpWord();
-        $section = $this->createSection($phpWord);
-
-        $developerName = $reportData->developerName !== '' ? $reportData->developerName : 'Разработчик';
-
-        $this->addMonthlyHeader($section, $developerName, $reportData->developerPosition, $reportData->dateFrom, $reportData->dateTo);
-
-        $grouped = $this->groupTasksByProject($reportData->days);
-        $this->addStatsLine($section, $grouped['totalTasks'], count($reportData->days));
-        $this->addProjectSections($section, $grouped['tasksByProject']);
-
-        $this->addUnclassifiedCommitsSection($section, $reportData->unclassifiedCommits ?? []);
-
-        return $this->saveDocument($phpWord, $reportData);
-    }
-
     private function addMonthlyHeader(
         Section $section,
         string $developerName,
@@ -258,24 +260,24 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * @param  list<ReportExportDay>  $days
-     * @return array{tasksByProject: array<string, list<ReportExportTask>>, totalTasks: int}
+     * @param  list<ReportExportMonthlyDay>  $days
+     * @return array{tasksByProject: array<string, list<ReportExportMonthlyTask>>, totalTasks: int}
      */
     private function groupTasksByProject(array $days): array
     {
-        /** @var array<string, list<ReportExportTask>> $tasksByProject */
+        /** @var array<string, list<ReportExportMonthlyTask>> $tasksByProject */
         $tasksByProject = [];
         $totalTasks = 0;
 
         foreach ($days as $day) {
             foreach ($day->tasks as $task) {
-                $projectName = $task->projectName !== '' ? $task->projectName : 'Без проекта';
+                $projectName = $task->base->projectName !== '' ? $task->base->projectName : 'Без проекта';
 
                 $alreadyAdded = false;
 
                 if (isset($tasksByProject[$projectName])) {
                     foreach ($tasksByProject[$projectName] as $existing) {
-                        if ($existing->title === $task->title) {
+                        if ($existing->base->title === $task->base->title) {
                             $alreadyAdded = true;
                             break;
                         }
@@ -302,7 +304,7 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * @param  array<string, list<ReportExportTask>>  $tasksByProject
+     * @param  array<string, list<ReportExportMonthlyTask>>  $tasksByProject
      */
     private function addProjectSections(Section $section, array $tasksByProject): void
     {
@@ -332,7 +334,7 @@ class WordExporter implements ReportExporterInterface
     }
 
     /**
-     * @param  list<ReportExportTask>  $tasks
+     * @param  list<ReportExportMonthlyTask>  $tasks
      */
     private function addTasksByStatus(
         Section $section,
@@ -403,12 +405,12 @@ class WordExporter implements ReportExporterInterface
         }
     }
 
-    private function addMonthlyTaskEntry(Section $section, ReportExportTask $task): void
+    private function addMonthlyTaskEntry(Section $section, ReportExportMonthlyTask $task): void
     {
         $idPrefix = $task->id !== null ? "Задача #{$task->id} — " : '';
 
         $section->addText(
-            "  • {$idPrefix}{$task->title}",
+            "  • {$idPrefix}{$task->base->title}",
             ['name'       => self::FONT_MAIN, 'size' => self::SIZE_MAIN / 2, 'bold' => true],
             ['spaceAfter' => 0, 'indentation' => ['left' => self::INDENT_FIRST_LINE]]
         );
@@ -421,16 +423,16 @@ class WordExporter implements ReportExporterInterface
             );
         }
 
-        if ($task->narrative !== '') {
+        if ($task->base->narrative !== '') {
             $section->addText(
-                "    {$task->narrative}",
+                "    {$task->base->narrative}",
                 ['name'       => self::FONT_MAIN, 'size' => self::SIZE_MAIN / 2],
                 ['spaceAfter' => 60, 'indentation' => ['left' => self::INDENT_FIRST_LINE]]
             );
         }
     }
 
-    private function exportDefault(ReportExportData $reportData): string
+    private function renderDefault(ReportExportData $reportData): string
     {
         $phpWord = $this->createPhpWord();
         $section = $this->createSection($phpWord);
@@ -439,7 +441,7 @@ class WordExporter implements ReportExporterInterface
         $this->addDays($section, $reportData);
         $this->addSummary($section, $reportData);
 
-        return $this->saveDocument($phpWord, $reportData);
+        return $this->saveDocument($phpWord, $reportData->dateFrom, $reportData->dateTo);
     }
 
     private function createPhpWord(): PhpWord
@@ -626,7 +628,7 @@ class WordExporter implements ReportExporterInterface
         );
     }
 
-    private function saveDocument(PhpWord $phpWord, ReportExportData $reportData): string
+    private function saveDocument(PhpWord $phpWord, string $dateFrom, string $dateTo): string
     {
         $reportsDir = storage_path('app/reports');
 
@@ -634,9 +636,9 @@ class WordExporter implements ReportExporterInterface
             throw new RuntimeException('Failed to create reports directory: ' . $reportsDir);
         }
 
-        $dateFrom = $reportData->dateFrom !== '' ? $reportData->dateFrom : 'unknown';
-        $dateTo = $reportData->dateTo !== '' ? $reportData->dateTo : 'unknown';
-        $filename = 'report-' . $dateFrom . '-' . $dateTo . '.docx';
+        $from = $dateFrom !== '' ? $dateFrom : 'unknown';
+        $to = $dateTo !== '' ? $dateTo : 'unknown';
+        $filename = 'report-' . $from . '-' . $to . '.docx';
         $filePath = $reportsDir . DIRECTORY_SEPARATOR . $filename;
 
         $writer = IOFactory::createWriter($phpWord, 'Word2007');
