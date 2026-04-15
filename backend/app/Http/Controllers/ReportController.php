@@ -231,14 +231,14 @@ class ReportController extends Controller
         $developerName = $settings !== null ? ($settings->developer_name ?? 'Разработчик') : 'Разработчик';
         $developerPosition = $settings !== null ? ($settings->developer_position ?? '') : '';
 
-        if ($preview['type'] === 'monthly') {
+        if ($preview->type === 'monthly') {
             $unclassified = $getUnclassified($report->getDateRange());
 
             $monthlyData = new ReportExportMonthlyData(
                 developerName: $developerName,
                 developerPosition: $developerPosition,
-                dateFrom: $preview['date_from'],
-                dateTo: $preview['date_to'],
+                dateFrom: $preview->dateFrom,
+                dateTo: $preview->dateTo,
                 days: $getMonthlyData($report),
                 unclassifiedCommits: array_map(
                     static fn (UnclassifiedCommit $c): ReportExportUnclassifiedCommit => new ReportExportUnclassifiedCommit(
@@ -252,39 +252,36 @@ class ReportController extends Controller
 
             $filePath = $this->exporter->exportMonthly($monthlyData);
         } else {
-            /** @var array<int, array{date: string, narrative: string|null, source: string, is_edited: bool, tasks: array<int, array{id: int|null, title: string, project_name: string|null, narrative: string|null, is_edited: bool}>}> $days */
-            $days = $preview['days'];
-
             /** @var list<ReportExportDay> $mappedDays */
             $mappedDays = [];
 
-            foreach ($days as $day) {
+            foreach ($preview->days as $day) {
                 /** @var list<ReportExportTask> $mappedTasks */
                 $mappedTasks = [];
                 $taskNumber = 1;
 
-                foreach ($day['tasks'] as $task) {
+                foreach ($day->tasks as $task) {
                     $mappedTasks[] = new ReportExportTask(
-                        title: $task['title'],
-                        projectName: $task['project_name'] ?? '',
-                        narrative: $task['narrative'] ?? '',
+                        title: $task->title,
+                        projectName: $task->projectName ?? '',
+                        narrative: $task->narrative ?? '',
                         number: $taskNumber,
                     );
                     $taskNumber++;
                 }
 
                 $mappedDays[] = new ReportExportDay(
-                    date: $day['date'],
+                    date: $day->date,
                     tasks: $mappedTasks,
                 );
             }
 
             $reportData = new ReportExportData(
-                type: $preview['type'],
+                type: $preview->type,
                 developerName: $developerName,
                 developerPosition: $developerPosition,
-                dateFrom: $preview['date_from'],
-                dateTo: $preview['date_to'],
+                dateFrom: $preview->dateFrom,
+                dateTo: $preview->dateTo,
                 days: $mappedDays,
             );
 
