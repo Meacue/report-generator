@@ -6,6 +6,7 @@ namespace App\Domain\Bitrix24\Services;
 
 use App\Domain\Bitrix24\DTOs\TimeEntryData;
 use Carbon\CarbonImmutable;
+use RuntimeException;
 
 interface Bitrix24ClientInterface
 {
@@ -58,6 +59,38 @@ interface Bitrix24ClientInterface
      * }
      */
     public function getTask(string $taskId): array;
+
+    /**
+     * Try to get a single task by ID, returning null when the API signals
+     * that the task does not exist or the caller has no access (403/404).
+     *
+     * Returns:
+     *   - array  — task found and returned successfully.
+     *   - null   — Bitrix24 returned ACCESS_DENIED or TASK_NOT_FOUND (expected
+     *              "no rights / deleted" situations); callers should create a
+     *              stub record instead.
+     *
+     * Throws RuntimeException for any other infrastructure error (timeout,
+     * 5xx, unexpected API error) so the caller can decide how to handle it.
+     *
+     * @return array{
+     *     id: string,
+     *     title: string,
+     *     status: string,
+     *     statusComplete: string,
+     *     groupId: string,
+     *     group: array{id: string, name: string},
+     *     closedDate: string|null,
+     *     url: string,
+     *     createdBy: string,
+     *     responsibleId: string,
+     *     accomplices: list<string>,
+     *     auditors: list<string>
+     * }|null
+     *
+     * @throws RuntimeException
+     */
+    public function tryGetTask(int $taskId): ?array;
 
     /**
      * Get list of projects/groups.

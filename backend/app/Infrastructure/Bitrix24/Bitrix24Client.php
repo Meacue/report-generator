@@ -104,6 +104,103 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         return $this->normalizeTask($response['result']['task']);
     }
 
+    /**
+     * Try to fetch a single task, returning null on 403 (ACCESS_DENIED) or
+     * 404 (TASK_NOT_FOUND) so callers can create a stub record instead.
+     *
+     * Bitrix24 does not use HTTP 4xx for these; it always responds 200 with
+     * an `error` field in the JSON body. We treat HTTP 4xx statuses produced
+     * by a proxy/WAF as equivalent and map them to null as well.
+     *
+     * Any other failure (connection error, 5xx, unexpected API error) is
+     * re-thrown as a RuntimeException so the caller can log-and-skip.
+     *
+     * @return array{
+     *     id: string,
+     *     title: string,
+     *     status: string,
+     *     statusComplete: string,
+     *     groupId: string,
+     *     group: array{id: string, name: string},
+     *     closedDate: string|null,
+     *     url: string,
+     *     createdBy: string,
+     *     responsibleId: string,
+     *     accomplices: list<string>,
+     *     auditors: list<string>
+     * }|null
+     *
+     * @throws RuntimeException
+     */
+    public function tryGetTask(int $taskId): ?array
+    {
+        $url = $this->buildUrl('tasks.task.get');
+
+        try {
+            $response = $this->httpClient()->post($url, ['taskId' => $taskId]);
+        } catch (ConnectionException $e) {
+            Log::error('Bitrix24 API connection error', [
+                'method' => 'tasks.task.get',
+                'error'  => $e->getMessage(),
+            ]);
+
+            throw new RuntimeException(
+                sprintf('Bitrix24 API connection failed for method tasks.task.get: %s', $e->getMessage()),
+                0,
+                $e,
+            );
+        }
+
+        // HTTP 403/404 from a proxy or WAF → treat as "no access / not found"
+        if ($response->status() === 403 || $response->status() === 404) {
+            return null;
+        }
+
+        if ($response->failed()) {
+            Log::error('Bitrix24 API request failed', [
+                'method' => 'tasks.task.get',
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+
+            throw new RuntimeException(
+                sprintf('Bitrix24 API request failed for method tasks.task.get with status %d', $response->status()),
+            );
+        }
+
+        /** @var array<string, mixed> $data */
+        $data = $response->json();
+
+        // Bitrix24 returns HTTP 200 with an `error` field for access/not-found errors
+        if (isset($data['error'])) {
+            $errorCode = is_string($data['error']) ? $data['error'] : '';
+
+            if (in_array($errorCode, ['ACCESS_DENIED', 'TASK_NOT_FOUND'], true)) {
+                return null;
+            }
+
+            $errorDescription = $data['error_description'] ?? null;
+            $errorMessage = is_string($errorDescription)
+                ? $errorDescription
+                : $this->mixedToString($data['error']);
+
+            Log::error('Bitrix24 API returned error', [
+                'method'      => 'tasks.task.get',
+                'error'       => $data['error'],
+                'description' => $errorMessage,
+            ]);
+
+            throw new RuntimeException(
+                sprintf('Bitrix24 API error for method tasks.task.get: %s', $errorMessage),
+            );
+        }
+
+        /** @var array{result: array{task: array<string, mixed>}} $typedData */
+        $typedData = $data;
+
+        return $this->normalizeTask($typedData['result']['task']);
+    }
+
     public function getProjects(): array
     {
         /** @var array{result: list<array<string, mixed>>} $response */

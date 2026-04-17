@@ -8,12 +8,17 @@ use JsonSerializable;
 
 final readonly class ReportPreviewBitrix24Task implements JsonSerializable
 {
+    public string $title;
+
     public function __construct(
         public int $id,
         public ?int $bitrix24TaskId,
-        public string $title,
+        string|null $title,
         public string $status,
     ) {
+        // Stub tasks (403/404 from Bitrix24) have a null title; coerce to an
+        // empty string so downstream rendering can apply its own label logic.
+        $this->title = $title ?? '';
     }
 
     /**

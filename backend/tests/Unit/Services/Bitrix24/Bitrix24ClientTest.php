@@ -442,6 +442,111 @@ class Bitrix24ClientTest extends TestCase
         $this->assertCount(0, $entries);
     }
 
+    public function test_try_get_task_returns_array_on_success(): void
+    {
+        // GIVEN: Bitrix24 responds with a valid task payload
+        Http::fake([
+            self::BASE_URL . '/' . self::USER_ID . '/' . self::API_KEY . '/tasks.task.get.json' => Http::response([
+                'result' => [
+                    'task' => [
+                        'id'             => '42',
+                        'title'          => 'Try task',
+                        'status'         => '3',
+                        'statusComplete' => '0',
+                        'groupId'        => '10',
+                        'group'          => ['id' => '10', 'name' => 'ProjectX'],
+                        'closedDate'     => null,
+                        'url'            => '/tasks/42/',
+                    ],
+                ],
+            ]),
+        ]);
+
+        // WHEN: tryGetTask is called
+        $result = $this->client->tryGetTask(42);
+
+        // THEN: normalized task array is returned
+        $this->assertNotNull($result);
+        $this->assertSame('42', $result['id']);
+        $this->assertSame('Try task', $result['title']);
+    }
+
+    public function test_try_get_task_returns_null_on_access_denied(): void
+    {
+        // GIVEN: Bitrix24 returns ACCESS_DENIED error in response body (HTTP 200)
+        Http::fake([
+            self::BASE_URL . '/' . self::USER_ID . '/' . self::API_KEY . '/tasks.task.get.json' => Http::response([
+                'error'             => 'ACCESS_DENIED',
+                'error_description' => 'Access denied! User does not have access to task.',
+            ]),
+        ]);
+
+        // WHEN: tryGetTask is called
+        $result = $this->client->tryGetTask(99);
+
+        // THEN: null is returned (not an exception)
+        $this->assertNull($result);
+    }
+
+    public function test_try_get_task_returns_null_on_task_not_found(): void
+    {
+        // GIVEN: Bitrix24 returns TASK_NOT_FOUND error in response body (HTTP 200)
+        Http::fake([
+            self::BASE_URL . '/' . self::USER_ID . '/' . self::API_KEY . '/tasks.task.get.json' => Http::response([
+                'error'             => 'TASK_NOT_FOUND',
+                'error_description' => 'Task does not exist.',
+            ]),
+        ]);
+
+        // WHEN: tryGetTask is called
+        $result = $this->client->tryGetTask(88);
+
+        // THEN: null is returned (not an exception)
+        $this->assertNull($result);
+    }
+
+    public function test_try_get_task_returns_null_on_http_403(): void
+    {
+        // GIVEN: a proxy returns HTTP 403 directly
+        Http::fake([
+            self::BASE_URL . '/' . self::USER_ID . '/' . self::API_KEY . '/tasks.task.get.json' => Http::response([], 403),
+        ]);
+
+        // WHEN: tryGetTask is called
+        $result = $this->client->tryGetTask(77);
+
+        // THEN: null is returned (not an exception)
+        $this->assertNull($result);
+    }
+
+    public function test_try_get_task_returns_null_on_http_404(): void
+    {
+        // GIVEN: a proxy returns HTTP 404 directly
+        Http::fake([
+            self::BASE_URL . '/' . self::USER_ID . '/' . self::API_KEY . '/tasks.task.get.json' => Http::response([], 404),
+        ]);
+
+        // WHEN: tryGetTask is called
+        $result = $this->client->tryGetTask(66);
+
+        // THEN: null is returned (not an exception)
+        $this->assertNull($result);
+    }
+
+    public function test_try_get_task_throws_on_server_error(): void
+    {
+        // GIVEN: Bitrix24 / proxy returns HTTP 500
+        Http::fake([
+            self::BASE_URL . '/' . self::USER_ID . '/' . self::API_KEY . '/tasks.task.get.json' => Http::response([], 500),
+        ]);
+
+        // WHEN / THEN: RuntimeException is thrown
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('tasks.task.get');
+
+        $this->client->tryGetTask(55);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int|null $bitrix24_task_id
- * @property string $title
+ * @property string|null $title
  * @property TaskStatus $status
  * @property int|null $project_id
  * @property string|null $project_name
