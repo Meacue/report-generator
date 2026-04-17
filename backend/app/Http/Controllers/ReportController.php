@@ -18,6 +18,7 @@ use App\Domain\Report\DTOs\ReportExportDay;
 use App\Domain\Report\DTOs\ReportExportMonthlyData;
 use App\Domain\Report\DTOs\ReportExportTask;
 use App\Domain\Report\DTOs\ReportExportUnclassifiedCommit;
+use App\Domain\Report\DTOs\ReportPreview;
 use App\Domain\Report\Queries\GetMonthlyReportData;
 use App\Domain\Report\Queries\GetReportPreview;
 use App\Domain\Report\Queries\HasDataForDateRange;
@@ -231,65 +232,82 @@ class ReportController extends Controller
         $developerName = $settings !== null ? ($settings->developer_name ?? 'Разработчик') : 'Разработчик';
         $developerPosition = $settings !== null ? ($settings->developer_position ?? '') : '';
 
-        if ($preview->type === 'monthly') {
-            $unclassified = $getUnclassified($report->getDateRange());
-
-            $monthlyData = new ReportExportMonthlyData(
-                developerName: $developerName,
-                developerPosition: $developerPosition,
-                dateFrom: $preview->dateFrom,
-                dateTo: $preview->dateTo,
-                days: $getMonthlyData($report),
-                unclassifiedCommits: array_map(
-                    static fn (UnclassifiedCommit $c): ReportExportUnclassifiedCommit => new ReportExportUnclassifiedCommit(
-                        repo: $c->repoName,
-                        message: $c->message,
-                        branch: $c->branchName,
-                    ),
-                    $unclassified,
-                ),
-            );
-
-            $filePath = $this->exporter->exportMonthly($monthlyData);
-        } else {
-            /** @var list<ReportExportDay> $mappedDays */
-            $mappedDays = [];
-
-            foreach ($preview->days as $day) {
-                /** @var list<ReportExportTask> $mappedTasks */
-                $mappedTasks = [];
-                $taskNumber = 1;
-
-                foreach ($day->tasks as $task) {
-                    $mappedTasks[] = new ReportExportTask(
-                        title: $task->title,
-                        projectName: $task->projectName ?? '',
-                        narrative: $task->narrative ?? '',
-                        number: $taskNumber,
-                    );
-                    $taskNumber++;
-                }
-
-                $mappedDays[] = new ReportExportDay(
-                    date: $day->date,
-                    tasks: $mappedTasks,
-                );
-            }
-
-            $reportData = new ReportExportData(
-                type: $preview->type,
-                developerName: $developerName,
-                developerPosition: $developerPosition,
-                dateFrom: $preview->dateFrom,
-                dateTo: $preview->dateTo,
-                days: $mappedDays,
-            );
-
-            $filePath = $this->exporter->exportStandard($reportData);
-        }
+        $filePath = $preview->type === 'monthly'
+            ? $this->buildMonthlyExport($report, $preview, $developerName, $developerPosition, $getMonthlyData, $getUnclassified)
+            : $this->buildStandardExport($preview, $developerName, $developerPosition);
 
         $report->markAsExported();
 
         return response()->download($filePath);
+    }
+
+    private function buildMonthlyExport(
+        Report $report,
+        ReportPreview $preview,
+        string $developerName,
+        string $developerPosition,
+        GetMonthlyReportData $getMonthlyData,
+        GetUnclassifiedCommitsForDateRange $getUnclassified,
+    ): string {
+        $unclassified = $getUnclassified($report->getDateRange());
+
+        $monthlyData = new ReportExportMonthlyData(
+            developerName: $developerName,
+            developerPosition: $developerPosition,
+            dateFrom: $preview->dateFrom,
+            dateTo: $preview->dateTo,
+            days: $getMonthlyData($report),
+            unclassifiedCommits: array_map(
+                static fn (UnclassifiedCommit $c): ReportExportUnclassifiedCommit => new ReportExportUnclassifiedCommit(
+                    repo: $c->repoName,
+                    message: $c->message,
+                    branch: $c->branchName,
+                ),
+                $unclassified,
+            ),
+        );
+
+        return $this->exporter->exportMonthly($monthlyData);
+    }
+
+    private function buildStandardExport(
+        ReportPreview $preview,
+        string $developerName,
+        string $developerPosition,
+    ): string {
+        /** @var list<ReportExportDay> $mappedDays */
+        $mappedDays = [];
+
+        foreach ($preview->days as $day) {
+            /** @var list<ReportExportTask> $mappedTasks */
+            $mappedTasks = [];
+            $taskNumber = 1;
+
+            foreach ($day->tasks as $task) {
+                $mappedTasks[] = new ReportExportTask(
+                    title: $task->title,
+                    projectName: $task->projectName ?? '',
+                    narrative: $task->narrative ?? '',
+                    number: $taskNumber,
+                );
+                $taskNumber++;
+            }
+
+            $mappedDays[] = new ReportExportDay(
+                date: $day->date,
+                tasks: $mappedTasks,
+            );
+        }
+
+        $reportData = new ReportExportData(
+            type: $preview->type,
+            developerName: $developerName,
+            developerPosition: $developerPosition,
+            dateFrom: $preview->dateFrom,
+            dateTo: $preview->dateTo,
+            days: $mappedDays,
+        );
+
+        return $this->exporter->exportStandard($reportData);
     }
 }

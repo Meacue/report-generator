@@ -128,58 +128,67 @@ class ClaudeProvider implements LlmProviderInterface
      */
     private function sendRequest(string $systemPrompt, string $userPrompt): array
     {
-        $lastException = null;
+        try {
+            return retry(
+                self::MAX_RETRIES,
+                function (int $attempt) use ($systemPrompt, $userPrompt): array {
+                    try {
+                        return $this->executeApiCall($systemPrompt, $userPrompt);
+                    } catch (\Throwable $e) {
+                        Log::warning("Claude API attempt {$attempt} failed", [
+                            'error'   => $e->getMessage(),
+                            'attempt' => $attempt,
+                        ]);
+                        throw $e;
+                    }
+                },
+                fn (int $attempt): int => 1000 * (2 ** ($attempt - 1)),
+            );
+        } catch (\Throwable $e) {
+            throw new RuntimeException(
+                'Claude API failed after ' . self::MAX_RETRIES . ' attempts: ' . $e->getMessage(),
+                0,
+                $e,
+            );
+        }
+    }
 
-        for ($attempt = 1; $attempt <= self::MAX_RETRIES; $attempt++) {
-            try {
-                $response = Http::withHeaders([
-                    'x-api-key'         => $this->apiKey,
-                    'anthropic-version' => '2023-06-01',
-                    'content-type'      => 'application/json',
-                ])->timeout(30)->post(self::API_URL, [
-                    'model'      => $this->model,
-                    'max_tokens' => $this->maxTokens,
-                    'system'     => $systemPrompt,
-                    'messages'   => [
-                        [
-                            'role'    => 'user',
-                            'content' => $userPrompt,
-                        ],
-                    ],
-                ]);
+    /**
+     * @return array{narrative: string, tokens_used: int}
+     */
+    private function executeApiCall(string $systemPrompt, string $userPrompt): array
+    {
+        $response = Http::withHeaders([
+            'x-api-key'         => $this->apiKey,
+            'anthropic-version' => '2023-06-01',
+            'content-type'      => 'application/json',
+        ])->timeout(30)->post(self::API_URL, [
+            'model'      => $this->model,
+            'max_tokens' => $this->maxTokens,
+            'system'     => $systemPrompt,
+            'messages'   => [
+                [
+                    'role'    => 'user',
+                    'content' => $userPrompt,
+                ],
+            ],
+        ]);
 
-                if ($response->failed()) {
-                    throw new RuntimeException(
-                        "Claude API returned status {$response->status()}: {$response->body()}"
-                    );
-                }
-
-                /** @var array{content: array<int, array{text: string}>, usage: array{input_tokens: int, output_tokens: int}} $data */
-                $data = $response->json();
-
-                $narrative = $data['content'][0]['text'] ?? '';
-                $tokensUsed = $data['usage']['input_tokens'] + $data['usage']['output_tokens'];
-
-                return [
-                    'narrative'   => $narrative,
-                    'tokens_used' => $tokensUsed,
-                ];
-            } catch (\Throwable $e) {
-                $lastException = $e;
-
-                Log::warning("Claude API attempt {$attempt} failed", [
-                    'error'   => $e->getMessage(),
-                    'attempt' => $attempt,
-                ]);
-
-                if ($attempt < self::MAX_RETRIES) {
-                    usleep((int) (1000000 * (2 ** ($attempt - 1))));
-                }
-            }
+        if ($response->failed()) {
+            throw new RuntimeException(
+                "Claude API returned status {$response->status()}: {$response->body()}"
+            );
         }
 
-        throw new RuntimeException(
-            'Claude API failed after ' . self::MAX_RETRIES . ' attempts: ' . $lastException->getMessage()
-        );
+        /** @var array{content: array<int, array{text: string}>, usage: array{input_tokens: int, output_tokens: int}} $data */
+        $data = $response->json();
+
+        $narrative = $data['content'][0]['text'] ?? '';
+        $tokensUsed = $data['usage']['input_tokens'] + $data['usage']['output_tokens'];
+
+        return [
+            'narrative'   => $narrative,
+            'tokens_used' => $tokensUsed,
+        ];
     }
 }

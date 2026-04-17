@@ -131,35 +131,50 @@ class PromptExportService implements PromptExportServiceInterface
             }
         }
 
-        if ($this->enrichmentEnabled && $task !== null) {
-            $task->loadMissing('matchResults.branch');
-
-            foreach ($task->matchResults as $matchResult) {
-                $branch = $matchResult->branch;
-                if ($branch === null) {
-                    continue;
-                }
-
-                if ($branch->mr_title !== null) {
-                    $lines[] = 'Название MR: ' . $branch->mr_title;
-                }
-                if ($branch->mr_description !== null) {
-                    $lines[] = 'Описание MR: ' . $branch->mr_description;
-                }
-                if ($branch->mr_additions !== null) {
-                    $lines[] = 'Статистика: +' . $branch->mr_additions . ' / -' . ($branch->mr_deletions ?? 0) . ' строк';
-                }
-                if (is_array($branch->mr_changed_files) && $branch->mr_changed_files !== []) {
-                    $files = array_slice($branch->mr_changed_files, 0, 20);
-                    $lines[] = 'Изменённые файлы: ' . implode(', ', $files);
-                }
-                break;
-            }
-        }
+        $this->appendEnrichmentData($lines, $reportTask);
 
         $narrative = $reportTask->narrative ?? 'Не сгенерирован';
         $lines[] = '';
         $lines[] = 'Текущий нарратив (если есть): ' . $narrative;
+    }
+
+    /**
+     * @param  array<int, string>  $lines
+     */
+    private function appendEnrichmentData(array &$lines, ReportTask $reportTask): void
+    {
+        if (! $this->enrichmentEnabled) {
+            return;
+        }
+
+        $task = $reportTask->task;
+        if ($task === null) {
+            return;
+        }
+
+        $task->loadMissing('matchResults.branch');
+
+        foreach ($task->matchResults as $matchResult) {
+            $branch = $matchResult->branch;
+            if ($branch === null) {
+                continue;
+            }
+
+            if ($branch->mr_title !== null) {
+                $lines[] = 'Название MR: ' . $branch->mr_title;
+            }
+            if ($branch->mr_description !== null) {
+                $lines[] = 'Описание MR: ' . $branch->mr_description;
+            }
+            if ($branch->mr_additions !== null) {
+                $lines[] = 'Статистика: +' . $branch->mr_additions . ' / -' . ($branch->mr_deletions ?? 0) . ' строк';
+            }
+            if (is_array($branch->mr_changed_files) && $branch->mr_changed_files !== []) {
+                $files = array_slice($branch->mr_changed_files, 0, 20);
+                $lines[] = 'Изменённые файлы: ' . implode(', ', $files);
+            }
+            break;
+        }
     }
 
     /**

@@ -128,60 +128,69 @@ class OpenAiProvider implements LlmProviderInterface
      */
     private function sendRequest(string $systemPrompt, string $userPrompt): array
     {
-        $lastException = null;
+        try {
+            return retry(
+                self::MAX_RETRIES,
+                function (int $attempt) use ($systemPrompt, $userPrompt): array {
+                    try {
+                        return $this->executeApiCall($systemPrompt, $userPrompt);
+                    } catch (\Throwable $e) {
+                        Log::warning("OpenAI API attempt {$attempt} failed", [
+                            'error'   => $e->getMessage(),
+                            'attempt' => $attempt,
+                        ]);
+                        throw $e;
+                    }
+                },
+                fn (int $attempt): int => 1000 * (2 ** ($attempt - 1)),
+            );
+        } catch (\Throwable $e) {
+            throw new RuntimeException(
+                'OpenAI API failed after ' . self::MAX_RETRIES . ' attempts: ' . $e->getMessage(),
+                0,
+                $e,
+            );
+        }
+    }
 
-        for ($attempt = 1; $attempt <= self::MAX_RETRIES; $attempt++) {
-            try {
-                $response = Http::withHeaders([
-                    'Authorization' => "Bearer {$this->apiKey}",
-                    'Content-Type'  => 'application/json',
-                ])->timeout(30)->post(self::API_URL, [
-                    'model'      => $this->model,
-                    'max_tokens' => $this->maxTokens,
-                    'messages'   => [
-                        [
-                            'role'    => 'system',
-                            'content' => $systemPrompt,
-                        ],
-                        [
-                            'role'    => 'user',
-                            'content' => $userPrompt,
-                        ],
-                    ],
-                ]);
+    /**
+     * @return array{narrative: string, tokens_used: int}
+     */
+    private function executeApiCall(string $systemPrompt, string $userPrompt): array
+    {
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$this->apiKey}",
+            'Content-Type'  => 'application/json',
+        ])->timeout(30)->post(self::API_URL, [
+            'model'      => $this->model,
+            'max_tokens' => $this->maxTokens,
+            'messages'   => [
+                [
+                    'role'    => 'system',
+                    'content' => $systemPrompt,
+                ],
+                [
+                    'role'    => 'user',
+                    'content' => $userPrompt,
+                ],
+            ],
+        ]);
 
-                if ($response->failed()) {
-                    throw new RuntimeException(
-                        "OpenAI API returned status {$response->status()}: {$response->body()}"
-                    );
-                }
-
-                /** @var array{choices: array<int, array{message: array{content: string}}>, usage: array{total_tokens: int}} $data */
-                $data = $response->json();
-
-                $narrative = $data['choices'][0]['message']['content'] ?? '';
-                $tokensUsed = $data['usage']['total_tokens'];
-
-                return [
-                    'narrative'   => $narrative,
-                    'tokens_used' => $tokensUsed,
-                ];
-            } catch (\Throwable $e) {
-                $lastException = $e;
-
-                Log::warning("OpenAI API attempt {$attempt} failed", [
-                    'error'   => $e->getMessage(),
-                    'attempt' => $attempt,
-                ]);
-
-                if ($attempt < self::MAX_RETRIES) {
-                    usleep((int) (1000000 * (2 ** ($attempt - 1))));
-                }
-            }
+        if ($response->failed()) {
+            throw new RuntimeException(
+                "OpenAI API returned status {$response->status()}: {$response->body()}"
+            );
         }
 
-        throw new RuntimeException(
-            'OpenAI API failed after ' . self::MAX_RETRIES . ' attempts: ' . $lastException->getMessage()
-        );
+        /** @var array{choices: array<int, array{message: array{content: string}}>, usage: array{total_tokens: int}} $data */
+        $data = $response->json();
+
+        $narrative = $data['choices'][0]['message']['content'] ?? '';
+        $tokensUsed = $data['usage']['total_tokens'];
+
+        return [
+            'narrative'   => $narrative,
+            'tokens_used' => $tokensUsed,
+        ];
     }
 }
