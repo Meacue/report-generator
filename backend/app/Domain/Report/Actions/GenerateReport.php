@@ -15,19 +15,36 @@ use App\Domain\Report\Queries\GetCommitsForDate;
 use App\Domain\Report\Queries\GetTaskIdsFromCommits;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Bitrix24\Models\Task;
+use App\Domain\Sync\Actions\SyncBitrix24ForReport;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class GenerateReport
 {
     public function __construct(
         private GetCommitsForDate $getCommitsForDate,
         private GetTaskIdsFromCommits $getTaskIdsFromCommits,
+        private SyncBitrix24ForReport $syncBitrix24ForReport,
     ) {
     }
 
     public function __invoke(string $type, DateRange $dateRange): Report
     {
+        // Trigger Flow 2 sync: pull time entries for the period and backfill
+        // any missing Bitrix24 tasks before building the report.
+        // - InvalidArgumentException (30-day limit) is a business rule → rethrow.
+        // - RuntimeException (lock contention, API failure) is infrastructure → degrade gracefully.
+        try {
+            ($this->syncBitrix24ForReport)($dateRange);
+        } catch (InvalidArgumentException $e) {
+            throw $e;
+        } catch (RuntimeException $e) {
+            Log::warning('Report-time sync failed', ['error' => $e->getMessage()]);
+        }
+
         $report = Report::create([
             'type'      => ReportType::from($type),
             'date_from' => $dateRange->from->toDateString(),

@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Domain\Report\Queries;
 
+use App\Domain\Bitrix24\Models\Task;
 use App\Domain\GitLab\Models\Branch;
 use App\Domain\GitLab\Models\Commit;
 use App\Domain\Matching\Models\MatchResult;
 use App\Domain\Report\Actions\GenerateReport;
-use App\Domain\Report\Queries\GetCommitsForDate;
 use App\Domain\Report\DTOs\ReportPreview;
+use App\Domain\Report\Queries\GetCommitsForDate;
 use App\Domain\Report\Queries\GetReportPreview;
 use App\Domain\Report\Queries\GetTaskIdsFromCommits;
 use App\Domain\Shared\ValueObjects\DateRange;
-use App\Domain\Bitrix24\Models\Task;
+use App\Domain\Sync\Actions\SyncBitrix24ForReport;
+use App\Domain\Sync\DTOs\SyncBitrix24ForReportResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 final class GetReportPreviewTest extends TestCase
@@ -34,7 +37,9 @@ final class GetReportPreviewTest extends TestCase
             'message'      => 'feat: add user auth',
         ]);
 
-        $generateReport = new GenerateReport(new GetCommitsForDate(), new GetTaskIdsFromCommits());
+        $syncMock = Mockery::mock(SyncBitrix24ForReport::class);
+        $syncMock->shouldReceive('__invoke')->andReturn(new SyncBitrix24ForReportResult(0, 0));
+        $generateReport = new GenerateReport(new GetCommitsForDate(), new GetTaskIdsFromCommits(), $syncMock);
         $report = $generateReport('daily', new DateRange('2026-03-10', '2026-03-10'));
         $preview = ($this->query)($report);
 

@@ -27,7 +27,7 @@ use RuntimeException;
  * Prepares for Phase F where time-tracking-only tasks are backfilled before
  * report generation.
  */
-final class EnsureTasksForPeriod
+class EnsureTasksForPeriod
 {
     public function __construct(
         private readonly Bitrix24ClientInterface $bitrix24Client,
