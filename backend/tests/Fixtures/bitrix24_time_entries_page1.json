@@ -1,0 +1,24 @@
+{
+  "result": [
+    {
+      "ID": "1001",
+      "TASK_ID": "123",
+      "USER_ID": "42",
+      "SECONDS": "3600",
+      "COMMENT_TEXT": "Fixed the login bug",
+      "DATE_START": "2024-01-15T09:00:00+03:00",
+      "CREATED_DATE": "2024-01-15T09:05:00+03:00"
+    },
+    {
+      "ID": "1002",
+      "TASK_ID": "123",
+      "USER_ID": "42",
+      "SECONDS": "1800",
+      "COMMENT_TEXT": "",
+      "DATE_START": "2024-01-15T11:00:00+03:00",
+      "CREATED_DATE": "2024-01-15T11:05:00+03:00"
+    }
+  ],
+  "total": 3,
+  "next": 50
+}

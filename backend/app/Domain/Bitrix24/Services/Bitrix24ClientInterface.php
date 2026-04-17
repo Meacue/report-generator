@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Bitrix24\Services;
 
+use App\Domain\Bitrix24\DTOs\TimeEntryData;
+use Carbon\CarbonImmutable;
+
 interface Bitrix24ClientInterface
 {
     /**
@@ -67,4 +70,18 @@ interface Bitrix24ClientInterface
      * Check if connection is working.
      */
     public function isConnected(): bool;
+
+    /**
+     * Get time entries logged by a user within the given date range.
+     *
+     * Wraps the Bitrix24 REST method task.elapseditem.getlist.
+     * Results are yielded as a lazy generator — iterate once to consume.
+     *
+     * @return iterable<int, TimeEntryData>
+     */
+    public function getTimeEntries(
+        string $userId,
+        CarbonImmutable $from,
+        CarbonImmutable $to,
+    ): iterable;
 }

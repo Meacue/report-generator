@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Bitrix24;
 
+use App\Domain\Bitrix24\DTOs\TimeEntryData;
 use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
@@ -130,6 +132,67 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         } catch (RuntimeException) {
             return false;
         }
+    }
+
+    /**
+     * Get time entries logged by a user within the given date range.
+     *
+     * Wraps the legacy Bitrix24 REST method task.elapseditem.getlist.
+     * That method expects ORDER, FILTER, SELECT as top-level POST body keys
+     * (unlike the newer tasks.task.list which wraps everything under params).
+     *
+     * @return iterable<int, TimeEntryData>
+     */
+    public function getTimeEntries(
+        string $userId,
+        CarbonImmutable $from,
+        CarbonImmutable $to,
+    ): iterable {
+        $filter = [
+            '>=CREATED_DATE' => $from->toIso8601String(),
+            '<=CREATED_DATE' => $to->toIso8601String(),
+            'USER_ID'        => $userId,
+        ];
+
+        $select = [
+            'ID',
+            'TASK_ID',
+            'USER_ID',
+            'SECONDS',
+            'COMMENT_TEXT',
+            'DATE_START',
+            'CREATED_DATE',
+        ];
+
+        $start = 0;
+        $first = true;
+
+        do {
+            if (! $first) {
+                usleep(250_000);
+            }
+
+            $first = false;
+
+            $payload = [
+                'ORDER'  => ['ID' => 'ASC'],
+                'FILTER' => $filter,
+                'SELECT' => $select,
+                'start'  => $start,
+            ];
+
+            /** @var array{result: list<array<string, mixed>>, next?: int} $response */
+            $response = $this->call('task.elapseditem.getlist', $payload);
+
+            $items = $response['result'];
+
+            foreach ($items as $raw) {
+                yield $this->normalizeTimeEntry($raw);
+            }
+
+            $next = $response['next'] ?? null;
+            $start = is_int($next) ? $next : 0;
+        } while ($next !== null);
     }
 
     /**
@@ -339,5 +402,49 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         }
 
         return $ids;
+    }
+
+    /**
+     * Normalize a raw task.elapseditem.getlist entry into a typed TimeEntryData DTO.
+     *
+     * Bitrix24 returns numeric fields as strings; dates may be missing or empty.
+     * DATE_START is preferred for trackedAt; falls back to CREATED_DATE when absent/empty.
+     *
+     * @param  array<string, mixed>  $raw
+     */
+    private function normalizeTimeEntry(array $raw): TimeEntryData
+    {
+        $entryId = (int) $this->mixedToString($raw['ID'] ?? '');
+        $taskId = (int) $this->mixedToString($raw['TASK_ID'] ?? '');
+        $userId = $this->mixedToString($raw['USER_ID'] ?? '');
+        $seconds = (int) $this->mixedToString($raw['SECONDS'] ?? '');
+
+        $commentRaw = $raw['COMMENT_TEXT'] ?? null;
+        $comment = (is_string($commentRaw) && $commentRaw !== '') ? $commentRaw : null;
+
+        $dateStartRaw = $raw['DATE_START'] ?? null;
+        $createdDateRaw = $raw['CREATED_DATE'] ?? null;
+
+        $sourceCreatedAt = (is_string($createdDateRaw) && $createdDateRaw !== '')
+            ? CarbonImmutable::parse($createdDateRaw)->utc()
+            : null;
+
+        if (is_string($dateStartRaw) && $dateStartRaw !== '') {
+            $trackedAt = CarbonImmutable::parse($dateStartRaw)->utc();
+        } elseif ($sourceCreatedAt !== null) {
+            $trackedAt = $sourceCreatedAt;
+        } else {
+            $trackedAt = CarbonImmutable::now()->utc();
+        }
+
+        return new TimeEntryData(
+            bitrix24EntryId: $entryId,
+            bitrix24TaskId: $taskId,
+            bitrix24UserId: $userId,
+            seconds: $seconds,
+            comment: $comment,
+            trackedAt: $trackedAt,
+            sourceCreatedAt: $sourceCreatedAt,
+        );
     }
 }
