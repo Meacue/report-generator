@@ -66,7 +66,7 @@ final readonly class SyncBitrix24
     /**
      * Run both sub-actions and return the aggregated result.
      */
-    public function performSync(): SyncBitrix24Result
+    private function performSync(): SyncBitrix24Result
     {
         $tasks = ($this->syncTasks)();
         $timeEntries = ($this->syncTimeEntries)(DateRange::lastDays(self::TIME_ENTRIES_DAYS));

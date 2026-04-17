@@ -89,26 +89,6 @@ final class SyncBitrix24Test extends TestCase
         $this->assertSame(SyncSource::Bitrix24, $outcome->log->source);
     }
 
-    public function test_perform_sync_returns_result_dto_with_breakdown(): void
-    {
-        $this->syncTasks
-            ->shouldReceive('__invoke')
-            ->once()
-            ->andReturn(7);
-
-        $this->syncTimeEntries
-            ->shouldReceive('__invoke')
-            ->once()
-            ->andReturn(2);
-
-        $result = $this->orchestrator->performSync();
-
-        $this->assertInstanceOf(SyncBitrix24Result::class, $result);
-        $this->assertSame(7, $result->tasks);
-        $this->assertSame(2, $result->timeEntries);
-        $this->assertSame(9, $result->total());
-    }
-
     public function test_returns_failed_sync_log_when_task_sync_throws(): void
     {
         $this->syncTasks

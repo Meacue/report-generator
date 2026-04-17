@@ -90,7 +90,7 @@ class SyncBitrix24Tasks
      * }  $task
      * @return list<string>
      */
-    public function resolveParticipationRoles(array $task, string $userId): array
+    private function resolveParticipationRoles(array $task, string $userId): array
     {
         /** @var array<string, true> $roles */
         $roles = [];
