@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Sync\Actions;
 
 use App\Domain\Shared\ValueObjects\DateRange;
+use App\Domain\Sync\DTOs\SyncBitrix24Outcome;
 use App\Domain\Sync\DTOs\SyncBitrix24Result;
 use App\Domain\Sync\Enums\SyncSource;
 use App\Domain\Sync\Enums\SyncStatus;
@@ -18,8 +19,10 @@ use Carbon\CarbonImmutable;
  * SyncBitrix24TimeEntries, then writes a single SyncLog entry with the
  * combined item count.
  *
- * The public __invoke() signature is unchanged — it still returns a SyncLog —
- * so all existing callers (SyncCommand, SyncJob, tests) continue to work.
+ * __invoke() returns a SyncBitrix24Outcome that bundles the persisted
+ * SyncLog with the detailed SyncBitrix24Result breakdown, so all callers
+ * (SyncCommand, RunSyncJob) get the log and the human-readable breakdown
+ * in a single call without having to call performSync() directly.
  */
 final readonly class SyncBitrix24
 {
@@ -34,25 +37,29 @@ final readonly class SyncBitrix24
     ) {
     }
 
-    public function __invoke(): SyncLog
+    public function __invoke(): SyncBitrix24Outcome
     {
         $startedAt = CarbonImmutable::now();
 
         try {
             $result = $this->performSync();
 
-            return $this->createSyncLog(
+            $log = $this->createSyncLog(
                 status: SyncStatus::Success,
                 itemsSynced: $result->total(),
                 startedAt: $startedAt,
             );
+
+            return new SyncBitrix24Outcome($log, $result);
         } catch (\Throwable $e) {
-            return $this->createSyncLog(
+            $log = $this->createSyncLog(
                 status: SyncStatus::Failed,
                 itemsSynced: 0,
                 startedAt: $startedAt,
                 errorMessage: $e->getMessage(),
             );
+
+            return new SyncBitrix24Outcome($log, new SyncBitrix24Result(0, 0));
         }
     }
 

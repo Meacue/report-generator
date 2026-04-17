@@ -8,9 +8,11 @@ use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Sync\Actions\SyncBitrix24;
 use App\Domain\Sync\Actions\SyncBitrix24Tasks;
 use App\Domain\Sync\Actions\SyncBitrix24TimeEntries;
+use App\Domain\Sync\DTOs\SyncBitrix24Outcome;
 use App\Domain\Sync\DTOs\SyncBitrix24Result;
 use App\Domain\Sync\Enums\SyncSource;
 use App\Domain\Sync\Enums\SyncStatus;
+use App\Domain\Sync\Models\SyncLog;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -41,9 +43,9 @@ final class SyncBitrix24Test extends TestCase
             ->once()
             ->andReturn(0);
 
-        $log = ($this->orchestrator)();
+        $outcome = ($this->orchestrator)();
 
-        $this->assertSame(5, $log->items_synced);
+        $this->assertSame(5, $outcome->log->items_synced);
     }
 
     public function test_calls_sync_time_entries_with_7_day_period(): void
@@ -80,11 +82,11 @@ final class SyncBitrix24Test extends TestCase
             ->once()
             ->andReturn(4);
 
-        $log = ($this->orchestrator)();
+        $outcome = ($this->orchestrator)();
 
-        $this->assertSame(14, $log->items_synced);
-        $this->assertSame(SyncStatus::Success, $log->status);
-        $this->assertSame(SyncSource::Bitrix24, $log->source);
+        $this->assertSame(14, $outcome->log->items_synced);
+        $this->assertSame(SyncStatus::Success, $outcome->log->status);
+        $this->assertSame(SyncSource::Bitrix24, $outcome->log->source);
     }
 
     public function test_perform_sync_returns_result_dto_with_breakdown(): void
@@ -117,11 +119,41 @@ final class SyncBitrix24Test extends TestCase
         $this->syncTimeEntries
             ->shouldNotReceive('__invoke');
 
-        $log = ($this->orchestrator)();
+        $outcome = ($this->orchestrator)();
 
-        $this->assertSame(SyncStatus::Failed, $log->status);
-        $this->assertSame(0, $log->items_synced);
-        $this->assertSame('API timeout', $log->error_message);
+        $this->assertSame(SyncStatus::Failed, $outcome->log->status);
+        $this->assertSame(0, $outcome->log->items_synced);
+        $this->assertSame('API timeout', $outcome->log->error_message);
+    }
+
+    public function test_invoke_writes_sync_log_and_returns_outcome(): void
+    {
+        $this->syncTasks
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(3);
+
+        $this->syncTimeEntries
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(2);
+
+        $outcome = ($this->orchestrator)();
+
+        $this->assertInstanceOf(SyncBitrix24Outcome::class, $outcome);
+        $this->assertInstanceOf(SyncLog::class, $outcome->log);
+        $this->assertInstanceOf(SyncBitrix24Result::class, $outcome->result);
+
+        $this->assertSame(3, $outcome->result->tasks);
+        $this->assertSame(2, $outcome->result->timeEntries);
+        $this->assertSame(5, $outcome->log->items_synced);
+        $this->assertSame(SyncStatus::Success, $outcome->log->status);
+
+        $this->assertDatabaseHas('sync_logs', [
+            'source'       => SyncSource::Bitrix24->value,
+            'status'       => SyncStatus::Success->value,
+            'items_synced' => 5,
+        ]);
     }
 
     protected function setUp(): void
