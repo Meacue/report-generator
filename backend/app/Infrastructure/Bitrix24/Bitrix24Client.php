@@ -44,7 +44,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         ?string $status = null,
     ): array {
         /** @var array<string, mixed> $filter */
-        $filter = ['RESPONSIBLE_ID' => $userId];
+        $filter = ['MEMBER' => $userId];
 
         if ($groupId !== null) {
             $filter['GROUP_ID'] = $groupId;
@@ -54,9 +54,19 @@ final class Bitrix24Client implements Bitrix24ClientInterface
             $filter['STATUS'] = self::STATUS_REVERSE_MAP[$status];
         }
 
-        $select = ['ID', 'TITLE', 'STATUS', 'GROUP_ID', 'CLOSED_DATE'];
+        $select = [
+            'ID',
+            'TITLE',
+            'STATUS',
+            'GROUP_ID',
+            'CLOSED_DATE',
+            'CREATED_BY',
+            'RESPONSIBLE_ID',
+            'ACCOMPLICES',
+            'AUDITORS',
+        ];
 
-        /** @var list<array{id: string, title: string, status: string, statusComplete: string, groupId: string, group: array{id: string, name: string}, closedDate: string|null, url: string}> $allTasks */
+        /** @var list<array{id: string, title: string, status: string, statusComplete: string, groupId: string, group: array{id: string, name: string}, closedDate: string|null, url: string, createdBy: string, responsibleId: string, accomplices: list<string>, auditors: list<string>}> $allTasks */
         $allTasks = [];
         $start = 0;
 
@@ -236,6 +246,10 @@ final class Bitrix24Client implements Bitrix24ClientInterface
     /**
      * Normalize a Bitrix24 task response into our standard format.
      *
+     * Participant IDs (CREATED_BY, RESPONSIBLE_ID, ACCOMPLICES, AUDITORS)
+     * are always coerced to strings so downstream consumers can compare
+     * identifiers without worrying about Bitrix24's mixed int/string typing.
+     *
      * @param  array<string, mixed>  $task
      * @return array{
      *     id: string,
@@ -245,7 +259,11 @@ final class Bitrix24Client implements Bitrix24ClientInterface
      *     groupId: string,
      *     group: array{id: string, name: string},
      *     closedDate: string|null,
-     *     url: string
+     *     url: string,
+     *     createdBy: string,
+     *     responsibleId: string,
+     *     accomplices: list<string>,
+     *     auditors: list<string>
      * }
      */
     private function normalizeTask(array $task): array
@@ -275,8 +293,12 @@ final class Bitrix24Client implements Bitrix24ClientInterface
                 'id'   => $this->getField($groupData, 'id', 'ID', $groupId),
                 'name' => $this->getField($groupData, 'name', 'NAME'),
             ],
-            'closedDate' => is_string($closedDate) ? $closedDate : null,
-            'url'        => $url,
+            'closedDate'    => is_string($closedDate) ? $closedDate : null,
+            'url'           => $url,
+            'createdBy'     => $this->getField($task, 'createdBy', 'CREATED_BY'),
+            'responsibleId' => $this->getField($task, 'responsibleId', 'RESPONSIBLE_ID'),
+            'accomplices'   => $this->getIdList($task, 'accomplices', 'ACCOMPLICES'),
+            'auditors'      => $this->getIdList($task, 'auditors', 'AUDITORS'),
         ];
     }
 
@@ -288,5 +310,34 @@ final class Bitrix24Client implements Bitrix24ClientInterface
     private function getField(array $task, string $primaryKey, string $fallbackKey, string $default = ''): string
     {
         return $this->mixedToString($task[$primaryKey] ?? $task[$fallbackKey] ?? $default);
+    }
+
+    /**
+     * Read a list of user IDs from a task payload, coercing every entry to a string.
+     *
+     * Bitrix24 may return `null`, a flat list, or an associative map for these fields
+     * (e.g. ACCOMPLICES can come back as `["2","7"]` or `{"0":"2","1":"7"}`).
+     *
+     * @param  array<string, mixed>  $task
+     * @return list<string>
+     */
+    private function getIdList(array $task, string $primaryKey, string $fallbackKey): array
+    {
+        $raw = $task[$primaryKey] ?? $task[$fallbackKey] ?? null;
+
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        /** @var list<string> $ids */
+        $ids = [];
+        foreach ($raw as $value) {
+            $stringValue = $this->mixedToString($value);
+            if ($stringValue !== '') {
+                $ids[] = $stringValue;
+            }
+        }
+
+        return $ids;
     }
 }

@@ -43,6 +43,75 @@ class Bitrix24ClientTest extends TestCase
 
         $this->assertSame('789', $tasks[2]['id']);
         $this->assertNull($tasks[2]['closedDate']);
+
+        $this->assertSame('1', $tasks[0]['createdBy']);
+        $this->assertSame('1', $tasks[0]['responsibleId']);
+        $this->assertSame([], $tasks[0]['accomplices']);
+        $this->assertSame([], $tasks[0]['auditors']);
+
+        $this->assertSame(['3'], $tasks[1]['accomplices']);
+        $this->assertSame(['1'], $tasks[2]['auditors']);
+    }
+
+    public function test_get_tasks_sends_member_filter(): void
+    {
+        Http::fake([
+            self::BASE_URL . '/' . self::USER_ID . '/' . self::API_KEY . '/tasks.task.list.json' => Http::response([
+                'result' => ['tasks' => []],
+                'total'  => 0,
+            ]),
+        ]);
+
+        $this->client->getTasks('777');
+
+        Http::assertSent(function (Request $request) {
+            $body = (string) $request->body();
+            /** @var array{filter?: array<string, mixed>, select?: list<string>} $decoded */
+            $decoded = json_decode($body, true);
+
+            $filter = $decoded['filter'] ?? [];
+            $select = $decoded['select'] ?? [];
+
+            $hasMember = isset($filter['MEMBER']) && $filter['MEMBER'] === '777';
+            $noResponsible = ! array_key_exists('RESPONSIBLE_ID', $filter);
+            $hasAllSelects = in_array('CREATED_BY', $select, true)
+                && in_array('RESPONSIBLE_ID', $select, true)
+                && in_array('ACCOMPLICES', $select, true)
+                && in_array('AUDITORS', $select, true);
+
+            return $hasMember && $noResponsible && $hasAllSelects;
+        });
+    }
+
+    public function test_get_tasks_normalizes_missing_participants(): void
+    {
+        Http::fake([
+            self::BASE_URL . '/' . self::USER_ID . '/' . self::API_KEY . '/tasks.task.list.json' => Http::response([
+                'result' => [
+                    'tasks' => [
+                        [
+                            'id'             => '42',
+                            'title'          => 'Partial payload',
+                            'status'         => '3',
+                            'statusComplete' => '0',
+                            'groupId'        => '10',
+                            'group'          => ['id' => '10', 'name' => 'Project'],
+                            'closedDate'     => null,
+                            'url'            => '/tasks/42/',
+                        ],
+                    ],
+                ],
+                'total' => 1,
+            ]),
+        ]);
+
+        $tasks = $this->client->getTasks('777');
+
+        $this->assertCount(1, $tasks);
+        $this->assertSame('', $tasks[0]['createdBy']);
+        $this->assertSame('', $tasks[0]['responsibleId']);
+        $this->assertSame([], $tasks[0]['accomplices']);
+        $this->assertSame([], $tasks[0]['auditors']);
     }
 
     public function test_get_tasks_with_pagination(): void

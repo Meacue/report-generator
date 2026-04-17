@@ -20,6 +20,8 @@ use Illuminate\Support\Carbon;
  * @property TaskStatus $status
  * @property int|null $project_id
  * @property string|null $project_name
+ * @property list<string>|null $participation_roles
+ * @property bool $is_external
  * @property string|null $bitrix24_url
  * @property Carbon|null $status_changed_at
  * @property Carbon|null $synced_at
@@ -39,6 +41,8 @@ class Task extends Model
         'status',
         'project_id',
         'project_name',
+        'participation_roles',
+        'is_external',
         'bitrix24_url',
         'status_changed_at',
         'synced_at',
@@ -60,11 +64,13 @@ class Task extends Model
     protected function casts(): array
     {
         return [
-            'bitrix24_task_id'  => 'integer',
-            'project_id'        => 'integer',
-            'status'            => TaskStatus::class,
-            'status_changed_at' => 'datetime',
-            'synced_at'         => 'datetime',
+            'bitrix24_task_id'    => 'integer',
+            'project_id'          => 'integer',
+            'status'              => TaskStatus::class,
+            'participation_roles' => 'array',
+            'is_external'         => 'boolean',
+            'status_changed_at'   => 'datetime',
+            'synced_at'           => 'datetime',
         ];
     }
 }

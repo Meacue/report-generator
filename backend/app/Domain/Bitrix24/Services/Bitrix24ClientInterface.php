@@ -7,7 +7,10 @@ namespace App\Domain\Bitrix24\Services;
 interface Bitrix24ClientInterface
 {
     /**
-     * Get tasks for a user, optionally filtered by project and status.
+     * Get tasks where the user participates in any role (MEMBER filter).
+     *
+     * The MEMBER filter is a Bitrix24 shortcut that matches if the user is
+     * the creator, the responsible, an accomplice or an auditor of a task.
      *
      * @param  string  $userId  Bitrix24 user ID
      * @param  int|null  $groupId  Project/group ID filter
@@ -20,7 +23,11 @@ interface Bitrix24ClientInterface
      *     groupId: string,
      *     group: array{id: string, name: string},
      *     closedDate: string|null,
-     *     url: string
+     *     url: string,
+     *     createdBy: string,
+     *     responsibleId: string,
+     *     accomplices: list<string>,
+     *     auditors: list<string>
      * }>
      */
     public function getTasks(
@@ -40,7 +47,11 @@ interface Bitrix24ClientInterface
      *     groupId: string,
      *     group: array{id: string, name: string},
      *     closedDate: string|null,
-     *     url: string
+     *     url: string,
+     *     createdBy: string,
+     *     responsibleId: string,
+     *     accomplices: list<string>,
+     *     auditors: list<string>
      * }
      */
     public function getTask(string $taskId): array;
