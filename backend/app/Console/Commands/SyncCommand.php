@@ -55,25 +55,19 @@ class SyncCommand extends Command
 
         if ($bitrix24Only) {
             $this->info('Syncing Bitrix24 data...');
-            $log = $syncBitrix24();
+            $result = $syncBitrix24->performSync();
 
-            /** @var SyncStatus $logStatus */
-            $logStatus = $log->status;
-
-            if ($logStatus === SyncStatus::Failed) {
-                $this->error("Bitrix24 sync failed: {$log->error_message}");
-
-                return self::FAILURE;
-            }
-
-            $this->info("Bitrix24 sync completed. Items synced: {$log->items_synced}");
+            $this->info("Bitrix24 sync completed. Tasks: {$result->tasks}, Time entries: {$result->timeEntries}");
 
             return self::SUCCESS;
         }
 
         $this->info('Running full synchronization...');
         $syncGitLab();
-        $syncBitrix24();
+
+        $result = $syncBitrix24->performSync();
+        $this->info("Bitrix24 sync completed. Tasks: {$result->tasks}, Time entries: {$result->timeEntries}");
+
         $matchAllUnmatched();
         $this->info('Full synchronization completed.');
 

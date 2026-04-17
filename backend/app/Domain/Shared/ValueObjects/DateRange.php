@@ -16,8 +16,8 @@ final readonly class DateRange
 
     public function __construct(string|CarbonImmutable $from, string|CarbonImmutable $to)
     {
-        $this->from = CarbonImmutable::parse($from);
-        $this->to = CarbonImmutable::parse($to);
+        $this->from = (CarbonImmutable::parse($from))->utc();
+        $this->to = (CarbonImmutable::parse($to))->utc();
 
         if ($this->from->isAfter($this->to)) {
             throw new InvalidArgumentException(
@@ -26,14 +26,48 @@ final readonly class DateRange
         }
     }
 
+    /**
+     * Create a range covering the last N days up to now (inclusive).
+     *
+     * Both boundaries are normalised to UTC midnight so the range is
+     * always an integer number of calendar days.
+     */
+    public static function lastDays(int $days): self
+    {
+        return new self(
+            CarbonImmutable::now('UTC')->subDays($days)->startOfDay(),
+            CarbonImmutable::now('UTC')->endOfDay(),
+        );
+    }
+
+    /**
+     * Create a range from two explicit CarbonImmutable boundaries.
+     */
+    public static function between(CarbonImmutable $from, CarbonImmutable $to): self
+    {
+        return new self($from, $to);
+    }
+
     public function contains(CarbonImmutable $date): bool
     {
         return $date->between($this->from, $this->to);
     }
 
+    /**
+     * Number of calendar days covered by the range (inclusive on both ends).
+     */
     public function days(): int
     {
         return (int) $this->from->diffInDays($this->to) + 1;
+    }
+
+    /**
+     * Whether the range exceeds the given maximum number of days.
+     * Useful for enforcing API rate-limit windows (e.g. 30-day cap).
+     */
+    public function exceeds(int $maxDays): bool
+    {
+        return $this->days() > $maxDays;
     }
 
     public function toPeriod(): CarbonPeriod

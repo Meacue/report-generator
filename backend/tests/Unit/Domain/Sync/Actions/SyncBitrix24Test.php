@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Domain\Sync\Actions;
 
-use App\Domain\Bitrix24\Enums\TaskStatus;
-use App\Domain\Bitrix24\Models\Task;
-use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
-use App\Domain\Settings\Models\ProjectMapping;
-use App\Domain\Settings\Models\Setting;
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Sync\Actions\SyncBitrix24;
+use App\Domain\Sync\Actions\SyncBitrix24Tasks;
+use App\Domain\Sync\Actions\SyncBitrix24TimeEntries;
+use App\Domain\Sync\DTOs\SyncBitrix24Result;
 use App\Domain\Sync\Enums\SyncSource;
 use App\Domain\Sync\Enums\SyncStatus;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\MockInterface;
@@ -21,240 +21,119 @@ final class SyncBitrix24Test extends TestCase
 {
     use RefreshDatabase;
 
-    private Bitrix24ClientInterface&MockInterface $bitrix24Client;
+    /** @var SyncBitrix24Tasks&MockInterface */
+    private SyncBitrix24Tasks $syncTasks;
 
-    private SyncBitrix24 $action;
+    /** @var SyncBitrix24TimeEntries&MockInterface */
+    private SyncBitrix24TimeEntries $syncTimeEntries;
 
-    public function test_creates_task_records(): void
+    private SyncBitrix24 $orchestrator;
+
+    public function test_calls_sync_tasks_once(): void
     {
-        Setting::factory()->create(['bitrix24_user_id' => '777']);
-        ProjectMapping::factory()->create(['bitrix24_project_id' => 5]);
-
-        $this->bitrix24Client
-            ->shouldReceive('getTasks')
+        $this->syncTasks
+            ->shouldReceive('__invoke')
             ->once()
-            ->andReturn([
-                $this->makeTaskPayload([
-                    'id'            => '1001',
-                    'title'         => 'Fix login page',
-                    'status'        => '5',
-                    'closedDate'    => '2026-03-10T15:00:00+03:00',
-                    'url'           => 'https://bitrix24.example.com/task/1001',
-                    'responsibleId' => '777',
-                ]),
-                $this->makeTaskPayload([
-                    'id'            => '1002',
-                    'title'         => 'Add dashboard',
-                    'status'        => '3',
-                    'closedDate'    => null,
-                    'url'           => 'https://bitrix24.example.com/task/1002',
-                    'responsibleId' => '777',
-                ]),
-            ]);
+            ->andReturn(5);
 
-        $log = ($this->action)();
+        $this->syncTimeEntries
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(0);
 
-        $this->assertNull($log->error_message, 'Sync error: ' . (string) $log->error_message);
+        $log = ($this->orchestrator)();
+
+        $this->assertSame(5, $log->items_synced);
+    }
+
+    public function test_calls_sync_time_entries_with_7_day_period(): void
+    {
+        $this->syncTasks
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(0);
+
+        $this->syncTimeEntries
+            ->shouldReceive('__invoke')
+            ->once()
+            ->withArgs(function (DateRange $period): bool {
+                $expectedFrom = CarbonImmutable::now('UTC')->subDays(7)->startOfDay();
+
+                // Allow ±5 seconds to account for test execution time
+                return $period->days() === 8
+                    && abs($period->from->diffInSeconds($expectedFrom)) <= 5;
+            })
+            ->andReturn(3);
+
+        ($this->orchestrator)();
+    }
+
+    public function test_returns_sync_log_with_combined_item_count(): void
+    {
+        $this->syncTasks
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(10);
+
+        $this->syncTimeEntries
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(4);
+
+        $log = ($this->orchestrator)();
+
+        $this->assertSame(14, $log->items_synced);
         $this->assertSame(SyncStatus::Success, $log->status);
         $this->assertSame(SyncSource::Bitrix24, $log->source);
-        $this->assertSame(2, $log->items_synced);
-        $this->assertDatabaseCount('tasks', 2);
-
-        /** @var Task $completedTask */
-        $completedTask = Task::query()->where('bitrix24_task_id', 1001)->first();
-        $this->assertSame(TaskStatus::Completed, $completedTask->status);
-        $this->assertFalse($completedTask->is_external);
-        $this->assertSame(['responsible'], $completedTask->participation_roles);
-
-        /** @var Task $inProgressTask */
-        $inProgressTask = Task::query()->where('bitrix24_task_id', 1002)->first();
-        $this->assertSame(TaskStatus::InProgress, $inProgressTask->status);
     }
 
-    public function test_only_responsible_role(): void
+    public function test_perform_sync_returns_result_dto_with_breakdown(): void
     {
-        Setting::factory()->create(['bitrix24_user_id' => '777']);
-        ProjectMapping::factory()->create(['bitrix24_project_id' => 5]);
-
-        $this->bitrix24Client
-            ->shouldReceive('getTasks')
+        $this->syncTasks
+            ->shouldReceive('__invoke')
             ->once()
-            ->andReturn([
-                $this->makeTaskPayload([
-                    'id'            => '2001',
-                    'createdBy'     => '5',
-                    'responsibleId' => '777',
-                ]),
-            ]);
+            ->andReturn(7);
 
-        ($this->action)();
+        $this->syncTimeEntries
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(2);
 
-        /** @var Task $task */
-        $task = Task::query()->where('bitrix24_task_id', 2001)->first();
-        $this->assertSame(['responsible'], $task->participation_roles);
+        $result = $this->orchestrator->performSync();
+
+        $this->assertInstanceOf(SyncBitrix24Result::class, $result);
+        $this->assertSame(7, $result->tasks);
+        $this->assertSame(2, $result->timeEntries);
+        $this->assertSame(9, $result->total());
     }
 
-    public function test_only_auditor_role(): void
+    public function test_returns_failed_sync_log_when_task_sync_throws(): void
     {
-        Setting::factory()->create(['bitrix24_user_id' => '777']);
-        ProjectMapping::factory()->create(['bitrix24_project_id' => 5]);
-
-        $this->bitrix24Client
-            ->shouldReceive('getTasks')
+        $this->syncTasks
+            ->shouldReceive('__invoke')
             ->once()
-            ->andReturn([
-                $this->makeTaskPayload([
-                    'id'            => '2002',
-                    'createdBy'     => '9',
-                    'responsibleId' => '10',
-                    'auditors'      => ['777', '12'],
-                ]),
-            ]);
+            ->andThrow(new \RuntimeException('API timeout'));
 
-        ($this->action)();
+        $this->syncTimeEntries
+            ->shouldNotReceive('__invoke');
 
-        /** @var Task $task */
-        $task = Task::query()->where('bitrix24_task_id', 2002)->first();
-        $this->assertSame(['auditor'], $task->participation_roles);
-    }
+        $log = ($this->orchestrator)();
 
-    public function test_multiple_roles_are_collected_and_sorted(): void
-    {
-        Setting::factory()->create(['bitrix24_user_id' => '777']);
-        ProjectMapping::factory()->create(['bitrix24_project_id' => 5]);
-
-        $this->bitrix24Client
-            ->shouldReceive('getTasks')
-            ->once()
-            ->andReturn([
-                $this->makeTaskPayload([
-                    'id'            => '2003',
-                    'createdBy'     => '777',
-                    'responsibleId' => '777',
-                    'accomplices'   => ['777'],
-                    'auditors'      => ['777'],
-                ]),
-            ]);
-
-        ($this->action)();
-
-        /** @var Task $task */
-        $task = Task::query()->where('bitrix24_task_id', 2003)->first();
-        $this->assertSame(
-            ['accomplice', 'auditor', 'creator', 'responsible'],
-            $task->participation_roles,
-        );
-    }
-
-    public function test_creator_plus_accomplice_roles(): void
-    {
-        Setting::factory()->create(['bitrix24_user_id' => '777']);
-        ProjectMapping::factory()->create(['bitrix24_project_id' => 5]);
-
-        $this->bitrix24Client
-            ->shouldReceive('getTasks')
-            ->once()
-            ->andReturn([
-                $this->makeTaskPayload([
-                    'id'            => '2004',
-                    'createdBy'     => '777',
-                    'responsibleId' => '8',
-                    'accomplices'   => ['777', '9'],
-                ]),
-            ]);
-
-        ($this->action)();
-
-        /** @var Task $task */
-        $task = Task::query()->where('bitrix24_task_id', 2004)->first();
-        $this->assertSame(['accomplice', 'creator'], $task->participation_roles);
-    }
-
-    public function test_user_not_in_task_gets_empty_roles(): void
-    {
-        Setting::factory()->create(['bitrix24_user_id' => '777']);
-        ProjectMapping::factory()->create(['bitrix24_project_id' => 5]);
-
-        $this->bitrix24Client
-            ->shouldReceive('getTasks')
-            ->once()
-            ->andReturn([
-                $this->makeTaskPayload([
-                    'id'            => '2005',
-                    'createdBy'     => '1',
-                    'responsibleId' => '2',
-                    'accomplices'   => ['3'],
-                    'auditors'      => ['4'],
-                ]),
-            ]);
-
-        ($this->action)();
-
-        /** @var Task $task */
-        $task = Task::query()->where('bitrix24_task_id', 2005)->first();
-        $this->assertSame([], $task->participation_roles);
-        $this->assertFalse($task->is_external);
+        $this->assertSame(SyncStatus::Failed, $log->status);
+        $this->assertSame(0, $log->items_synced);
+        $this->assertSame('API timeout', $log->error_message);
     }
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->bitrix24Client = Mockery::mock(Bitrix24ClientInterface::class);
-        $this->action = new SyncBitrix24(
-            bitrix24Client: $this->bitrix24Client,
+        $this->syncTasks = Mockery::mock(SyncBitrix24Tasks::class);
+        $this->syncTimeEntries = Mockery::mock(SyncBitrix24TimeEntries::class);
+
+        $this->orchestrator = new SyncBitrix24(
+            syncTasks: $this->syncTasks,
+            syncTimeEntries: $this->syncTimeEntries,
         );
-    }
-
-    /**
-     * @param  array<string, mixed>  $overrides
-     * @return array{
-     *     id: string,
-     *     title: string,
-     *     status: string,
-     *     statusComplete: string,
-     *     groupId: string,
-     *     group: array{id: string, name: string},
-     *     closedDate: string|null,
-     *     url: string,
-     *     createdBy: string,
-     *     responsibleId: string,
-     *     accomplices: list<string>,
-     *     auditors: list<string>
-     * }
-     */
-    private function makeTaskPayload(array $overrides): array
-    {
-        /** @var array{
-         *     id: string,
-         *     title: string,
-         *     status: string,
-         *     statusComplete: string,
-         *     groupId: string,
-         *     group: array{id: string, name: string},
-         *     closedDate: string|null,
-         *     url: string,
-         *     createdBy: string,
-         *     responsibleId: string,
-         *     accomplices: list<string>,
-         *     auditors: list<string>
-         * } $payload
-         */
-        $payload = array_merge([
-            'id'             => '1',
-            'title'          => 'Task',
-            'status'         => '3',
-            'statusComplete' => '0',
-            'groupId'        => '5',
-            'group'          => ['id' => '5', 'name' => 'Project Alpha'],
-            'closedDate'     => null,
-            'url'            => 'https://bitrix24.example.com/task/1',
-            'createdBy'      => '1',
-            'responsibleId'  => '1',
-            'accomplices'    => [],
-            'auditors'       => [],
-        ], $overrides);
-
-        return $payload;
     }
 }
