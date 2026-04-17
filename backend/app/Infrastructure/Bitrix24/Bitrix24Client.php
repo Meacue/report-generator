@@ -250,16 +250,13 @@ final class Bitrix24Client implements Bitrix24ClientInterface
      */
     private function normalizeTask(array $task): array
     {
-        $id = $this->mixedToString($task['id'] ?? $task['ID'] ?? '');
-        $groupId = $this->mixedToString($task['groupId'] ?? $task['GROUP_ID'] ?? '');
-        $statusCode = $this->mixedToString($task['status'] ?? $task['STATUS'] ?? '');
+        $id = $this->getField($task, 'id', 'ID');
+        $groupId = $this->getField($task, 'groupId', 'GROUP_ID');
+        $statusCode = $this->getField($task, 'status', 'STATUS');
 
         $rawGroup = $task['group'] ?? $task['SE_GROUP'] ?? [];
         /** @var array<string, mixed> $groupData */
         $groupData = is_array($rawGroup) ? $rawGroup : [];
-
-        $groupName = $this->mixedToString($groupData['name'] ?? $groupData['NAME'] ?? '');
-        $groupIdFromGroup = $this->mixedToString($groupData['id'] ?? $groupData['ID'] ?? $groupId);
 
         $closedDate = $task['closedDate'] ?? $task['CLOSED_DATE'] ?? null;
 
@@ -270,16 +267,26 @@ final class Bitrix24Client implements Bitrix24ClientInterface
 
         return [
             'id'             => $id,
-            'title'          => $this->mixedToString($task['title'] ?? $task['TITLE'] ?? ''),
+            'title'          => $this->getField($task, 'title', 'TITLE'),
             'status'         => $statusCode,
-            'statusComplete' => $this->mixedToString($task['statusComplete'] ?? $task['STATUS_COMPLETE'] ?? $statusCode),
+            'statusComplete' => $this->getField($task, 'statusComplete', 'STATUS_COMPLETE', $statusCode),
             'groupId'        => $groupId,
             'group'          => [
-                'id'   => $groupIdFromGroup,
-                'name' => $groupName,
+                'id'   => $this->getField($groupData, 'id', 'ID', $groupId),
+                'name' => $this->getField($groupData, 'name', 'NAME'),
             ],
             'closedDate' => is_string($closedDate) ? $closedDate : null,
             'url'        => $url,
         ];
+    }
+
+    /**
+     * Read a string field from a task payload, tolerating camelCase/UPPER_CASE conventions.
+     *
+     * @param  array<string, mixed>  $task
+     */
+    private function getField(array $task, string $primaryKey, string $fallbackKey, string $default = ''): string
+    {
+        return $this->mixedToString($task[$primaryKey] ?? $task[$fallbackKey] ?? $default);
     }
 }
