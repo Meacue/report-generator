@@ -5,6 +5,8 @@ import {
   useRegenerateTask,
   useUndoTask,
 } from "../../hooks/useReports";
+import { formatDuration } from "../../utils/formatDuration";
+import { displayTaskTitle } from "../../utils/taskTitle";
 
 interface Props {
   reportId: number;
@@ -106,23 +108,51 @@ export function ReportTasksTab({ reportId, tasks }: Props) {
                   marginBottom: "8px",
                 }}
               >
-                <div style={{ fontWeight: "bold", fontSize: "14px" }}>
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "6px",
+                  }}
+                >
                   {task.task ? (
                     <>
                       <span style={{ color: "#888", fontWeight: "normal" }}>
                         B24-{task.task.bitrix24_task_id}
                       </span>{" "}
-                      {task.task.title}
+                      {displayTaskTitle(
+                        task.task.title,
+                        task.task.bitrix24_task_id,
+                      )}
                     </>
                   ) : (
                     <span style={{ color: "#888" }}>
                       Задача без привязки к Bitrix24
                     </span>
                   )}
+                  {task.task &&
+                    task.task.seconds_tracked !== null &&
+                    task.task.seconds_tracked > 0 && (
+                      <span
+                        style={{
+                          padding: "2px 8px",
+                          background: "#f0fff4",
+                          color: "#276749",
+                          borderRadius: "10px",
+                          fontSize: "11px",
+                          fontWeight: "normal",
+                          border: "1px solid #c6f6d5",
+                        }}
+                      >
+                        {formatDuration(task.task.seconds_tracked)}
+                      </span>
+                    )}
                   {task.is_edited && (
                     <span
                       style={{
-                        marginLeft: "8px",
                         padding: "2px 8px",
                         background: "#ebf4ff",
                         color: "#3182ce",

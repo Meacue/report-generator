@@ -33,8 +33,9 @@ export interface ReportTaskPreview {
   task?: {
     id: number;
     bitrix24_task_id: number;
-    title: string;
+    title: string | null;
     status: string;
+    seconds_tracked: number | null;
   };
 }
 
