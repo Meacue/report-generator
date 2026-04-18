@@ -137,6 +137,10 @@ export function ReportTasksTab({ reportId, tasks }: Props) {
                     task.task.seconds_tracked !== null &&
                     task.task.seconds_tracked > 0 && (
                       <span
+                        title="Отслежено времени в Bitrix24 за период отчёта"
+                        aria-label={`Отслежено ${formatDuration(
+                          task.task.seconds_tracked,
+                        )}`}
                         style={{
                           padding: "2px 8px",
                           background: "#f0fff4",
