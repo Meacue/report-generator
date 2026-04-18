@@ -96,4 +96,52 @@ final class DateRangeTest extends TestCase
         $this->assertSame('2024-06-15', $range->from->toDateString());
         $this->assertSame('2024-06-15', $range->to->toDateString());
     }
+
+    public function test_last_days_creates_range_ending_today(): void
+    {
+        $range = DateRange::lastDays(7);
+
+        $this->assertSame(8, $range->days());
+        $this->assertSame('UTC', $range->from->timezoneName);
+        $this->assertSame('UTC', $range->to->timezoneName);
+    }
+
+    public function test_last_days_from_is_before_to(): void
+    {
+        $range = DateRange::lastDays(30);
+
+        $this->assertTrue($range->from->lessThan($range->to));
+    }
+
+    public function test_between_named_constructor(): void
+    {
+        $from = CarbonImmutable::parse('2025-01-01');
+        $to = CarbonImmutable::parse('2025-01-15');
+
+        $range = DateRange::between($from, $to);
+
+        $this->assertSame(15, $range->days());
+    }
+
+    public function test_exceeds_returns_true_when_over_limit(): void
+    {
+        $range = new DateRange('2024-01-01', '2024-02-15');
+
+        $this->assertTrue($range->exceeds(30));
+    }
+
+    public function test_exceeds_returns_false_when_within_limit(): void
+    {
+        $range = new DateRange('2024-01-01', '2024-01-07');
+
+        $this->assertFalse($range->exceeds(30));
+    }
+
+    public function test_exceeds_returns_false_when_equal_to_limit(): void
+    {
+        $range = new DateRange('2024-01-01', '2024-01-30');
+
+        // days() = 30, exceeds(30) must be false (strictly greater)
+        $this->assertFalse($range->exceeds(30));
+    }
 }

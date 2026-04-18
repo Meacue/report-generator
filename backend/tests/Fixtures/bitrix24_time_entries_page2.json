@@ -1,0 +1,14 @@
+{
+  "result": [
+    {
+      "ID": "1003",
+      "TASK_ID": "456",
+      "USER_ID": "42",
+      "SECONDS": "7200",
+      "COMMENT_TEXT": "Refactored models",
+      "DATE_START": "2024-01-16T10:00:00+03:00",
+      "CREATED_DATE": "2024-01-16T10:10:00+03:00"
+    }
+  ],
+  "total": 3
+}

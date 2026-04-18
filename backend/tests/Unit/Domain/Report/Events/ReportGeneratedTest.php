@@ -18,8 +18,11 @@ use App\Domain\Report\Models\Report;
 use App\Domain\Report\Models\ReportTask;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Narrative\Services\LlmProviderInterface;
+use App\Domain\Sync\Actions\SyncBitrix24ForReport;
+use App\Domain\Sync\DTOs\SyncBitrix24ForReportResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Mockery;
 use Tests\Mocks\MockLlmProvider;
 use Tests\TestCase;
 
@@ -36,7 +39,9 @@ final class ReportGeneratedTest extends TestCase
             'branch_id'    => $branch->id,
             'committed_at' => '2026-03-10 10:00:00',
         ]);
-        $action = new GenerateReport(new GetCommitsForDate(), new GetTaskIdsFromCommits());
+        $syncMock = Mockery::mock(SyncBitrix24ForReport::class);
+        $syncMock->shouldReceive('__invoke')->andReturn(new SyncBitrix24ForReportResult(0, 0));
+        $action = new GenerateReport(new GetCommitsForDate(), new GetTaskIdsFromCommits(), $syncMock);
 
         // WHEN — the GenerateReport action is invoked
         $report = $action('daily', new DateRange('2026-03-10', '2026-03-10'));

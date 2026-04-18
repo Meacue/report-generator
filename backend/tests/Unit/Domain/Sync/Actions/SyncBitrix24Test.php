@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Domain\Sync\Actions;
 
-use App\Domain\Bitrix24\Enums\TaskStatus;
-use App\Domain\Bitrix24\Models\Task;
-use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
-use App\Domain\Settings\Models\ProjectMapping;
-use App\Domain\Settings\Models\Setting;
+use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Sync\Actions\SyncBitrix24;
+use App\Domain\Sync\Actions\SyncBitrix24Tasks;
+use App\Domain\Sync\Actions\SyncBitrix24TimeEntries;
+use App\Domain\Sync\DTOs\SyncBitrix24Outcome;
+use App\Domain\Sync\DTOs\SyncBitrix24Result;
 use App\Domain\Sync\Enums\SyncSource;
 use App\Domain\Sync\Enums\SyncStatus;
+use App\Domain\Sync\Models\SyncLog;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Mockery\MockInterface;
@@ -21,65 +23,129 @@ final class SyncBitrix24Test extends TestCase
 {
     use RefreshDatabase;
 
-    private Bitrix24ClientInterface&MockInterface $bitrix24Client;
+    /** @var SyncBitrix24Tasks&MockInterface */
+    private SyncBitrix24Tasks $syncTasks;
 
-    private SyncBitrix24 $action;
+    /** @var SyncBitrix24TimeEntries&MockInterface */
+    private SyncBitrix24TimeEntries $syncTimeEntries;
 
-    public function test_creates_task_records(): void
+    private SyncBitrix24 $orchestrator;
+
+    public function test_calls_sync_tasks_once(): void
     {
-        Setting::factory()->create(['bitrix24_user_id' => '777']);
-        ProjectMapping::factory()->create(['bitrix24_project_id' => 5]);
-
-        $this->bitrix24Client
-            ->shouldReceive('getTasks')
+        $this->syncTasks
+            ->shouldReceive('__invoke')
             ->once()
-            ->andReturn([
-                [
-                    'id'             => '1001',
-                    'title'          => 'Fix login page',
-                    'status'         => '5',
-                    'statusComplete' => '5',
-                    'groupId'        => '5',
-                    'group'          => ['id' => '5', 'name' => 'Project Alpha'],
-                    'closedDate'     => '2026-03-10T15:00:00+03:00',
-                    'url'            => 'https://bitrix24.example.com/task/1001',
-                ],
-                [
-                    'id'             => '1002',
-                    'title'          => 'Add dashboard',
-                    'status'         => '3',
-                    'statusComplete' => '0',
-                    'groupId'        => '5',
-                    'group'          => ['id' => '5', 'name' => 'Project Alpha'],
-                    'closedDate'     => null,
-                    'url'            => 'https://bitrix24.example.com/task/1002',
-                ],
-            ]);
+            ->andReturn(5);
 
-        $log = ($this->action)();
+        $this->syncTimeEntries
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(0);
 
-        $this->assertNull($log->error_message, 'Sync error: ' . (string) $log->error_message);
-        $this->assertSame(SyncStatus::Success, $log->status);
-        $this->assertSame(SyncSource::Bitrix24, $log->source);
-        $this->assertSame(2, $log->items_synced);
-        $this->assertDatabaseCount('tasks', 2);
+        $outcome = ($this->orchestrator)();
 
-        /** @var Task $completedTask */
-        $completedTask = Task::query()->where('bitrix24_task_id', 1001)->first();
-        $this->assertSame(TaskStatus::Completed, $completedTask->status);
+        $this->assertSame(5, $outcome->log->items_synced);
+    }
 
-        /** @var Task $inProgressTask */
-        $inProgressTask = Task::query()->where('bitrix24_task_id', 1002)->first();
-        $this->assertSame(TaskStatus::InProgress, $inProgressTask->status);
+    public function test_calls_sync_time_entries_with_7_day_period(): void
+    {
+        $this->syncTasks
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(0);
+
+        $this->syncTimeEntries
+            ->shouldReceive('__invoke')
+            ->once()
+            ->withArgs(function (DateRange $period): bool {
+                $expectedFrom = CarbonImmutable::now('UTC')->subDays(7)->startOfDay();
+
+                // Allow ±5 seconds to account for test execution time
+                return $period->days() === 8
+                    && abs($period->from->diffInSeconds($expectedFrom)) <= 5;
+            })
+            ->andReturn(3);
+
+        ($this->orchestrator)();
+    }
+
+    public function test_returns_sync_log_with_combined_item_count(): void
+    {
+        $this->syncTasks
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(10);
+
+        $this->syncTimeEntries
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(4);
+
+        $outcome = ($this->orchestrator)();
+
+        $this->assertSame(14, $outcome->log->items_synced);
+        $this->assertSame(SyncStatus::Success, $outcome->log->status);
+        $this->assertSame(SyncSource::Bitrix24, $outcome->log->source);
+    }
+
+    public function test_returns_failed_sync_log_when_task_sync_throws(): void
+    {
+        $this->syncTasks
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andThrow(new \RuntimeException('API timeout'));
+
+        $this->syncTimeEntries
+            ->shouldNotReceive('__invoke');
+
+        $outcome = ($this->orchestrator)();
+
+        $this->assertSame(SyncStatus::Failed, $outcome->log->status);
+        $this->assertSame(0, $outcome->log->items_synced);
+        $this->assertSame('API timeout', $outcome->log->error_message);
+    }
+
+    public function test_invoke_writes_sync_log_and_returns_outcome(): void
+    {
+        $this->syncTasks
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(3);
+
+        $this->syncTimeEntries
+            ->shouldReceive('__invoke')
+            ->once()
+            ->andReturn(2);
+
+        $outcome = ($this->orchestrator)();
+
+        $this->assertInstanceOf(SyncBitrix24Outcome::class, $outcome);
+        $this->assertInstanceOf(SyncLog::class, $outcome->log);
+        $this->assertInstanceOf(SyncBitrix24Result::class, $outcome->result);
+
+        $this->assertSame(3, $outcome->result->tasks);
+        $this->assertSame(2, $outcome->result->timeEntries);
+        $this->assertSame(5, $outcome->log->items_synced);
+        $this->assertSame(SyncStatus::Success, $outcome->log->status);
+
+        $this->assertDatabaseHas('sync_logs', [
+            'source'       => SyncSource::Bitrix24->value,
+            'status'       => SyncStatus::Success->value,
+            'items_synced' => 5,
+        ]);
     }
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->bitrix24Client = Mockery::mock(Bitrix24ClientInterface::class);
-        $this->action = new SyncBitrix24(
-            bitrix24Client: $this->bitrix24Client,
+        $this->syncTasks = Mockery::mock(SyncBitrix24Tasks::class);
+        $this->syncTimeEntries = Mockery::mock(SyncBitrix24TimeEntries::class);
+
+        $this->orchestrator = new SyncBitrix24(
+            syncTasks: $this->syncTasks,
+            syncTimeEntries: $this->syncTimeEntries,
         );
     }
 }

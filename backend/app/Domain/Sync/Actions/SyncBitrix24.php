@@ -4,96 +4,77 @@ declare(strict_types=1);
 
 namespace App\Domain\Sync\Actions;
 
-use App\Domain\Bitrix24\Enums\TaskStatus;
-use App\Domain\Bitrix24\Models\Task;
-use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
-use App\Domain\Settings\Models\ProjectMapping;
-use App\Domain\Settings\Models\Setting;
+use App\Domain\Shared\ValueObjects\DateRange;
+use App\Domain\Sync\DTOs\SyncBitrix24Outcome;
+use App\Domain\Sync\DTOs\SyncBitrix24Result;
 use App\Domain\Sync\Enums\SyncSource;
 use App\Domain\Sync\Enums\SyncStatus;
 use App\Domain\Sync\Models\SyncLog;
 use Carbon\CarbonImmutable;
 
+/**
+ * Orchestrator for Bitrix24 synchronisation (Flow 1).
+ *
+ * Delegates task syncing to SyncBitrix24Tasks and time-entry syncing to
+ * SyncBitrix24TimeEntries, then writes a single SyncLog entry with the
+ * combined item count.
+ *
+ * __invoke() returns a SyncBitrix24Outcome that bundles the persisted
+ * SyncLog with the detailed SyncBitrix24Result breakdown, so all callers
+ * (SyncCommand, RunSyncJob) get the log and the human-readable breakdown
+ * in a single call without having to call performSync() directly.
+ */
 final readonly class SyncBitrix24
 {
+    /**
+     * Time-entry safety-net window: sync the last N days to cover Inbox gaps.
+     */
+    private const TIME_ENTRIES_DAYS = 7;
+
     public function __construct(
-        private Bitrix24ClientInterface $bitrix24Client,
+        private SyncBitrix24Tasks $syncTasks,
+        private SyncBitrix24TimeEntries $syncTimeEntries,
     ) {
     }
 
-    public function __invoke(): SyncLog
+    public function __invoke(): SyncBitrix24Outcome
     {
         $startedAt = CarbonImmutable::now();
 
         try {
-            $itemsSynced = $this->performSync();
+            $result = $this->performSync();
 
-            return $this->createSyncLog(
+            $log = $this->createSyncLog(
                 status: SyncStatus::Success,
-                itemsSynced: $itemsSynced,
+                itemsSynced: $result->total(),
                 startedAt: $startedAt,
             );
+
+            return new SyncBitrix24Outcome($log, $result);
         } catch (\Throwable $e) {
-            return $this->createSyncLog(
+            $log = $this->createSyncLog(
                 status: SyncStatus::Failed,
                 itemsSynced: 0,
                 startedAt: $startedAt,
                 errorMessage: $e->getMessage(),
             );
+
+            return new SyncBitrix24Outcome($log, new SyncBitrix24Result(0, 0));
         }
     }
 
-    private function performSync(): int
+    /**
+     * Run both sub-actions and return the aggregated result.
+     */
+    private function performSync(): SyncBitrix24Result
     {
-        $setting = Setting::query()->first();
+        $tasks = ($this->syncTasks)();
+        $timeEntries = ($this->syncTimeEntries)(DateRange::lastDays(self::TIME_ENTRIES_DAYS));
 
-        /** @var string|null $bitrix24UserId */
-        $bitrix24UserId = $setting?->bitrix24_user_id;
-
-        if ($bitrix24UserId === null || $bitrix24UserId === '') {
-            return 0;
-        }
-
-        /** @var list<ProjectMapping> $mappings */
-        $mappings = ProjectMapping::all()->all();
-        $itemsSynced = 0;
-
-        foreach ($mappings as $mapping) {
-            /** @var int $groupId */
-            $groupId = $mapping->bitrix24_project_id;
-
-            $tasks = $this->bitrix24Client->getTasks(
-                userId: $bitrix24UserId,
-                groupId: $groupId,
-            );
-
-            foreach ($tasks as $taskData) {
-                Task::query()->updateOrCreate(
-                    ['bitrix24_task_id' => (int) $taskData['id']],
-                    [
-                        'title'             => $taskData['title'],
-                        'status'            => $this->mapBitrix24Status($taskData['status']),
-                        'project_id'        => (int) $taskData['groupId'],
-                        'project_name'      => $taskData['group']['name'],
-                        'bitrix24_url'      => $taskData['url'],
-                        'status_changed_at' => $taskData['closedDate'],
-                        'synced_at'         => CarbonImmutable::now(),
-                    ],
-                );
-
-                $itemsSynced++;
-            }
-        }
-
-        return $itemsSynced;
-    }
-
-    private function mapBitrix24Status(string $status): TaskStatus
-    {
-        return match ($status) {
-            '5'     => TaskStatus::Completed,
-            default => TaskStatus::InProgress,
-        };
+        return new SyncBitrix24Result(
+            tasks: $tasks,
+            timeEntries: $timeEntries,
+        );
     }
 
     private function createSyncLog(

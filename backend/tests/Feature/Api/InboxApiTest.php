@@ -89,6 +89,29 @@ class InboxApiTest extends TestCase
         ]);
     }
 
+    public function test_assign_branch_to_task_where_user_is_only_auditor(): void
+    {
+        $branch = Branch::factory()->create();
+        $task = Task::factory()->create([
+            'participation_roles' => ['auditor'],
+        ]);
+
+        $response = $this->postJson('/api/inbox/assign', [
+            'branch_id' => $branch->id,
+            'task_id'   => $task->bitrix24_task_id,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('message', 'Assigned');
+
+        $this->assertDatabaseHas('match_results', [
+            'branch_id'        => $branch->id,
+            'task_id'          => $task->id,
+            'confidence_level' => ConfidenceLevel::Auto->value,
+            'resolved_by'      => ResolvedBy::User->value,
+        ]);
+    }
+
     public function test_bulk_assign(): void
     {
         $branch1 = Branch::factory()->create();

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Bitrix24;
 
+use App\Domain\Bitrix24\DTOs\TimeEntryData;
 use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
@@ -44,7 +46,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         ?string $status = null,
     ): array {
         /** @var array<string, mixed> $filter */
-        $filter = ['RESPONSIBLE_ID' => $userId];
+        $filter = ['MEMBER' => $userId];
 
         if ($groupId !== null) {
             $filter['GROUP_ID'] = $groupId;
@@ -54,9 +56,19 @@ final class Bitrix24Client implements Bitrix24ClientInterface
             $filter['STATUS'] = self::STATUS_REVERSE_MAP[$status];
         }
 
-        $select = ['ID', 'TITLE', 'STATUS', 'GROUP_ID', 'CLOSED_DATE'];
+        $select = [
+            'ID',
+            'TITLE',
+            'STATUS',
+            'GROUP_ID',
+            'CLOSED_DATE',
+            'CREATED_BY',
+            'RESPONSIBLE_ID',
+            'ACCOMPLICES',
+            'AUDITORS',
+        ];
 
-        /** @var list<array{id: string, title: string, status: string, statusComplete: string, groupId: string, group: array{id: string, name: string}, closedDate: string|null, url: string}> $allTasks */
+        /** @var list<array{id: string, title: string, status: string, statusComplete: string, groupId: string, group: array{id: string, name: string}, closedDate: string|null, url: string, createdBy: string, responsibleId: string, accomplices: list<string>, auditors: list<string>}> $allTasks */
         $allTasks = [];
         $start = 0;
 
@@ -92,6 +104,103 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         return $this->normalizeTask($response['result']['task']);
     }
 
+    /**
+     * Try to fetch a single task, returning null on 403 (ACCESS_DENIED) or
+     * 404 (TASK_NOT_FOUND) so callers can create a stub record instead.
+     *
+     * Bitrix24 does not use HTTP 4xx for these; it always responds 200 with
+     * an `error` field in the JSON body. We treat HTTP 4xx statuses produced
+     * by a proxy/WAF as equivalent and map them to null as well.
+     *
+     * Any other failure (connection error, 5xx, unexpected API error) is
+     * re-thrown as a RuntimeException so the caller can log-and-skip.
+     *
+     * @return array{
+     *     id: string,
+     *     title: string,
+     *     status: string,
+     *     statusComplete: string,
+     *     groupId: string,
+     *     group: array{id: string, name: string},
+     *     closedDate: string|null,
+     *     url: string,
+     *     createdBy: string,
+     *     responsibleId: string,
+     *     accomplices: list<string>,
+     *     auditors: list<string>
+     * }|null
+     *
+     * @throws RuntimeException
+     */
+    public function tryGetTask(int $taskId): ?array
+    {
+        $url = $this->buildUrl('tasks.task.get');
+
+        try {
+            $response = $this->httpClient()->post($url, ['taskId' => $taskId]);
+        } catch (ConnectionException $e) {
+            Log::error('Bitrix24 API connection error', [
+                'method' => 'tasks.task.get',
+                'error'  => $e->getMessage(),
+            ]);
+
+            throw new RuntimeException(
+                sprintf('Bitrix24 API connection failed for method tasks.task.get: %s', $e->getMessage()),
+                0,
+                $e,
+            );
+        }
+
+        // HTTP 403/404 from a proxy or WAF → treat as "no access / not found"
+        if ($response->status() === 403 || $response->status() === 404) {
+            return null;
+        }
+
+        if ($response->failed()) {
+            Log::error('Bitrix24 API request failed', [
+                'method' => 'tasks.task.get',
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+
+            throw new RuntimeException(
+                sprintf('Bitrix24 API request failed for method tasks.task.get with status %d', $response->status()),
+            );
+        }
+
+        /** @var array<string, mixed> $data */
+        $data = $response->json();
+
+        // Bitrix24 returns HTTP 200 with an `error` field for access/not-found errors
+        if (isset($data['error'])) {
+            $errorCode = is_string($data['error']) ? $data['error'] : '';
+
+            if (in_array($errorCode, ['ACCESS_DENIED', 'TASK_NOT_FOUND'], true)) {
+                return null;
+            }
+
+            $errorDescription = $data['error_description'] ?? null;
+            $errorMessage = is_string($errorDescription)
+                ? $errorDescription
+                : $this->mixedToString($data['error']);
+
+            Log::error('Bitrix24 API returned error', [
+                'method'      => 'tasks.task.get',
+                'error'       => $data['error'],
+                'description' => $errorMessage,
+            ]);
+
+            throw new RuntimeException(
+                sprintf('Bitrix24 API error for method tasks.task.get: %s', $errorMessage),
+            );
+        }
+
+        /** @var array{result: array{task: array<string, mixed>}} $typedData */
+        $typedData = $data;
+
+        return $this->normalizeTask($typedData['result']['task']);
+    }
+
     public function getProjects(): array
     {
         /** @var array{result: list<array<string, mixed>>} $response */
@@ -120,6 +229,67 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         } catch (RuntimeException) {
             return false;
         }
+    }
+
+    /**
+     * Get time entries logged by a user within the given date range.
+     *
+     * Wraps the legacy Bitrix24 REST method task.elapseditem.getlist.
+     * That method expects ORDER, FILTER, SELECT as top-level POST body keys
+     * (unlike the newer tasks.task.list which wraps everything under params).
+     *
+     * @return iterable<int, TimeEntryData>
+     */
+    public function getTimeEntries(
+        string $userId,
+        CarbonImmutable $from,
+        CarbonImmutable $to,
+    ): iterable {
+        $filter = [
+            '>=CREATED_DATE' => $from->toIso8601String(),
+            '<=CREATED_DATE' => $to->toIso8601String(),
+            'USER_ID'        => $userId,
+        ];
+
+        $select = [
+            'ID',
+            'TASK_ID',
+            'USER_ID',
+            'SECONDS',
+            'COMMENT_TEXT',
+            'DATE_START',
+            'CREATED_DATE',
+        ];
+
+        $start = 0;
+        $first = true;
+
+        do {
+            if (! $first) {
+                usleep(250_000);
+            }
+
+            $first = false;
+
+            $payload = [
+                'ORDER'  => ['ID' => 'ASC'],
+                'FILTER' => $filter,
+                'SELECT' => $select,
+                'start'  => $start,
+            ];
+
+            /** @var array{result: list<array<string, mixed>>, next?: int} $response */
+            $response = $this->call('task.elapseditem.getlist', $payload);
+
+            $items = $response['result'];
+
+            foreach ($items as $raw) {
+                yield $this->normalizeTimeEntry($raw);
+            }
+
+            $next = $response['next'] ?? null;
+            $start = is_int($next) ? $next : 0;
+        } while ($next !== null);
     }
 
     /**
@@ -236,6 +406,10 @@ final class Bitrix24Client implements Bitrix24ClientInterface
     /**
      * Normalize a Bitrix24 task response into our standard format.
      *
+     * Participant IDs (CREATED_BY, RESPONSIBLE_ID, ACCOMPLICES, AUDITORS)
+     * are always coerced to strings so downstream consumers can compare
+     * identifiers without worrying about Bitrix24's mixed int/string typing.
+     *
      * @param  array<string, mixed>  $task
      * @return array{
      *     id: string,
@@ -245,7 +419,11 @@ final class Bitrix24Client implements Bitrix24ClientInterface
      *     groupId: string,
      *     group: array{id: string, name: string},
      *     closedDate: string|null,
-     *     url: string
+     *     url: string,
+     *     createdBy: string,
+     *     responsibleId: string,
+     *     accomplices: list<string>,
+     *     auditors: list<string>
      * }
      */
     private function normalizeTask(array $task): array
@@ -275,8 +453,12 @@ final class Bitrix24Client implements Bitrix24ClientInterface
                 'id'   => $this->getField($groupData, 'id', 'ID', $groupId),
                 'name' => $this->getField($groupData, 'name', 'NAME'),
             ],
-            'closedDate' => is_string($closedDate) ? $closedDate : null,
-            'url'        => $url,
+            'closedDate'    => is_string($closedDate) ? $closedDate : null,
+            'url'           => $url,
+            'createdBy'     => $this->getField($task, 'createdBy', 'CREATED_BY'),
+            'responsibleId' => $this->getField($task, 'responsibleId', 'RESPONSIBLE_ID'),
+            'accomplices'   => $this->getIdList($task, 'accomplices', 'ACCOMPLICES'),
+            'auditors'      => $this->getIdList($task, 'auditors', 'AUDITORS'),
         ];
     }
 
@@ -288,5 +470,78 @@ final class Bitrix24Client implements Bitrix24ClientInterface
     private function getField(array $task, string $primaryKey, string $fallbackKey, string $default = ''): string
     {
         return $this->mixedToString($task[$primaryKey] ?? $task[$fallbackKey] ?? $default);
+    }
+
+    /**
+     * Read a list of user IDs from a task payload, coercing every entry to a string.
+     *
+     * Bitrix24 may return `null`, a flat list, or an associative map for these fields
+     * (e.g. ACCOMPLICES can come back as `["2","7"]` or `{"0":"2","1":"7"}`).
+     *
+     * @param  array<string, mixed>  $task
+     * @return list<string>
+     */
+    private function getIdList(array $task, string $primaryKey, string $fallbackKey): array
+    {
+        $raw = $task[$primaryKey] ?? $task[$fallbackKey] ?? null;
+
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        /** @var list<string> $ids */
+        $ids = [];
+        foreach ($raw as $value) {
+            $stringValue = $this->mixedToString($value);
+            if ($stringValue !== '') {
+                $ids[] = $stringValue;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Normalize a raw task.elapseditem.getlist entry into a typed TimeEntryData DTO.
+     *
+     * Bitrix24 returns numeric fields as strings; dates may be missing or empty.
+     * DATE_START is preferred for trackedAt; falls back to CREATED_DATE when absent/empty.
+     *
+     * @param  array<string, mixed>  $raw
+     */
+    private function normalizeTimeEntry(array $raw): TimeEntryData
+    {
+        $entryId = (int) $this->mixedToString($raw['ID'] ?? '');
+        $taskId = (int) $this->mixedToString($raw['TASK_ID'] ?? '');
+        $userId = $this->mixedToString($raw['USER_ID'] ?? '');
+        $seconds = (int) $this->mixedToString($raw['SECONDS'] ?? '');
+
+        $commentRaw = $raw['COMMENT_TEXT'] ?? null;
+        $comment = (is_string($commentRaw) && $commentRaw !== '') ? $commentRaw : null;
+
+        $dateStartRaw = $raw['DATE_START'] ?? null;
+        $createdDateRaw = $raw['CREATED_DATE'] ?? null;
+
+        $sourceCreatedAt = (is_string($createdDateRaw) && $createdDateRaw !== '')
+            ? CarbonImmutable::parse($createdDateRaw)->utc()
+            : null;
+
+        if (is_string($dateStartRaw) && $dateStartRaw !== '') {
+            $trackedAt = CarbonImmutable::parse($dateStartRaw)->utc();
+        } elseif ($sourceCreatedAt !== null) {
+            $trackedAt = $sourceCreatedAt;
+        } else {
+            $trackedAt = CarbonImmutable::now()->utc();
+        }
+
+        return new TimeEntryData(
+            bitrix24EntryId: $entryId,
+            bitrix24TaskId: $taskId,
+            bitrix24UserId: $userId,
+            seconds: $seconds,
+            comment: $comment,
+            trackedAt: $trackedAt,
+            sourceCreatedAt: $sourceCreatedAt,
+        );
     }
 }

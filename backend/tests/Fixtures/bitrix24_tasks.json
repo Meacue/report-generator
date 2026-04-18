@@ -9,7 +9,11 @@
         "groupId": "10",
         "group": {"id": "10", "name": "ProjectX"},
         "closedDate": "2024-01-16T18:00:00+03:00",
-        "url": "/company/personal/user/1/tasks/task/view/123/"
+        "url": "/company/personal/user/1/tasks/task/view/123/",
+        "createdBy": "1",
+        "responsibleId": "1",
+        "accomplices": [],
+        "auditors": []
       },
       {
         "id": "456",
@@ -19,7 +23,11 @@
         "groupId": "10",
         "group": {"id": "10", "name": "ProjectX"},
         "closedDate": "2024-01-17T12:00:00+03:00",
-        "url": "/company/personal/user/1/tasks/task/view/456/"
+        "url": "/company/personal/user/1/tasks/task/view/456/",
+        "createdBy": "2",
+        "responsibleId": "1",
+        "accomplices": ["3"],
+        "auditors": []
       },
       {
         "id": "789",
@@ -29,7 +37,11 @@
         "groupId": "20",
         "group": {"id": "20", "name": "ProjectY"},
         "closedDate": null,
-        "url": "/company/personal/user/1/tasks/task/view/789/"
+        "url": "/company/personal/user/1/tasks/task/view/789/",
+        "createdBy": "5",
+        "responsibleId": "7",
+        "accomplices": [],
+        "auditors": ["1"]
       }
     ]
   },
