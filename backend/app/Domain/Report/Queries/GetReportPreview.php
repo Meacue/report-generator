@@ -14,9 +14,16 @@ use App\Domain\Report\Models\ReportDay;
 
 final readonly class GetReportPreview
 {
+    public function __construct(
+        private GetTaskTimeBreakdown $getTaskTimeBreakdown,
+    ) {
+    }
+
     public function __invoke(Report $report): ReportPreview
     {
         $report->load(['reportDays.reportDayTasks.reportTask.task', 'reportTasks.task']);
+
+        $breakdown = $this->getTaskTimeBreakdown->__invoke($report->getDateRange());
 
         /** @var list<ReportPreviewDay> $days */
         $days = [];
@@ -38,19 +45,24 @@ final readonly class GetReportPreview
             dateTo: $report->date_to->format('Y-m-d'),
             status: $report->status->value,
             days: $days,
-            tasks: $this->buildTopLevelTasks($report),
+            tasks: $this->buildTopLevelTasks($report, $breakdown),
         );
     }
 
     /**
+     * @param  array<int, int>  $breakdown
      * @return list<ReportPreviewTask>
      */
-    private function buildTopLevelTasks(Report $report): array
+    private function buildTopLevelTasks(Report $report, array $breakdown): array
     {
         $tasks = [];
 
         foreach ($report->reportTasks as $reportTask) {
             $task = $reportTask->task;
+            $bitrix24TaskId = $task !== null ? $task->bitrix24_task_id : null;
+            $secondsTracked = ($bitrix24TaskId !== null && isset($breakdown[$bitrix24TaskId]))
+                ? $breakdown[$bitrix24TaskId]
+                : null;
 
             $tasks[] = new ReportPreviewTask(
                 id: $reportTask->id,
@@ -64,6 +76,7 @@ final readonly class GetReportPreview
                         bitrix24TaskId: $task->bitrix24_task_id,
                         title: $task->title,
                         status: $task->status->value,
+                        secondsTracked: $secondsTracked,
                     )
                     : null,
             );
@@ -86,9 +99,15 @@ final readonly class GetReportPreview
                 continue;
             }
 
+            $bitrix24TaskId = $reportTask->task?->bitrix24_task_id;
+            $rawTitle = $reportTask->task?->title;
+            $displayTitle = $rawTitle !== null && $rawTitle !== ''
+                ? $rawTitle
+                : ($bitrix24TaskId !== null ? "#{$bitrix24TaskId} (без названия)" : '');
+
             $tasks[] = new ReportPreviewDayTask(
                 id: $reportTask->task_id,
-                title: $reportTask->task->title ?? '',
+                title: $displayTitle,
                 projectName: $reportTask->project_name,
                 narrative: $rdt->narrative ?? $reportTask->narrative,
                 isEdited: $rdt->is_edited,

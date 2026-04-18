@@ -13,6 +13,7 @@ final readonly class ReportExportTask
         public string $projectName = '',
         public string $narrative = '',
         public int|string|null $number = null,
+        public ?int $secondsTracked = null,
     ) {
         // Stub tasks (403/404 from Bitrix24) have a null title; coerce to an
         // empty string so downstream rendering can apply its own label logic.

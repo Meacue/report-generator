@@ -11,15 +11,22 @@ use App\Domain\Report\Models\Report;
 
 final readonly class GetMonthlyReportData
 {
+    public function __construct(
+        private GetTaskTimeBreakdown $getTaskTimeBreakdown,
+    ) {
+    }
+
     /**
      * Build monthly report days with tasks enriched by Bitrix24 metadata
-     * (status, bitrix24_url) for rendering in monthly Word export.
+     * (status, bitrix24_url, secondsTracked) for rendering in monthly Word export.
      *
      * @return list<ReportExportMonthlyDay>
      */
     public function __invoke(Report $report): array
     {
         $report->load(['reportDays.reportDayTasks.reportTask.task']);
+
+        $breakdown = $this->getTaskTimeBreakdown->__invoke($report->getDateRange());
 
         $days = [];
 
@@ -34,10 +41,21 @@ final readonly class GetMonthlyReportData
                 }
 
                 $task = $reportTask->task;
+                $bitrix24TaskId = $task !== null ? $task->bitrix24_task_id : null;
+                $secondsTracked = ($bitrix24TaskId !== null && isset($breakdown[$bitrix24TaskId]))
+                    ? $breakdown[$bitrix24TaskId]
+                    : null;
+
+                $rawTitle = $task !== null ? $task->title : null;
+                $displayTitle = $rawTitle !== null && $rawTitle !== ''
+                    ? $rawTitle
+                    : ($bitrix24TaskId !== null ? "#{$bitrix24TaskId} (без названия)" : '');
+
                 $base = new ReportExportTask(
-                    title: $task !== null ? $task->title : '',
+                    title: $displayTitle,
                     projectName: $reportTask->project_name ?? '',
                     narrative: $rdt->narrative ?? $reportTask->narrative ?? '',
+                    secondsTracked: $secondsTracked,
                 );
 
                 $tasks[] = $task !== null
