@@ -104,8 +104,25 @@ class SyncController extends Controller
                 ob_end_clean();
             }
 
-            $this->sendCurrentJobState();
-            $this->listenForProgressOnDedicatedConnection();
+            /** @var SyncJob|null $currentJob */
+            $currentJob = SyncJob::query()->latest('started_at')->first();
+
+            $this->sendInitialState($currentJob);
+
+            if ($currentJob === null) {
+                return;
+            }
+
+            if (in_array($currentJob->status, [SyncStatus::Success, SyncStatus::Failed], true)) {
+                $this->sendSSE('done', [
+                    'status'        => $currentJob->status->value,
+                    'error_message' => $currentJob->error_message,
+                ]);
+
+                return;
+            }
+
+            $this->listenForProgressOnDedicatedConnection($currentJob->id);
         }, 200, [
             'Content-Type'      => 'text/event-stream',
             'Cache-Control'     => 'no-cache',
@@ -120,24 +137,58 @@ class SyncController extends Controller
      * Uses a separate connection because disconnect() is the only way
      * to exit phpredis' blocking subscribe() — and it throws RedisException.
      */
-    private function listenForProgressOnDedicatedConnection(): void
+    private function listenForProgressOnDedicatedConnection(int $syncJobId): void
     {
         /** @var PhpRedisConnection $redis */
         $redis = Redis::connection('subscribe');
 
-        try {
-            $redis->subscribe(['sync:progress'], function (string $message) use ($redis): void {
-                /** @var array<string, mixed> $data */
-                $data = json_decode($message, true);
-                $this->sendSSE('progress', $data);
+        while (! connection_aborted()) {
+            $subscribedNormally = false;
+            try {
+                $redis->subscribe(['sync:progress'], function (string $message) use ($redis, &$subscribedNormally): void {
+                    $subscribedNormally = true;
+                    /** @var array<string, mixed> $data */
+                    $data = json_decode($message, true);
+                    $this->sendSSE('progress', $data);
 
-                $status = $data['status'] ?? null;
-                if ($status === 'success' || $status === 'failed') {
-                    $this->sendSSE('done', ['status' => $status]);
-                    $redis->disconnect();
+                    $status = $data['status'] ?? null;
+                    if ($status === 'success' || $status === 'failed') {
+                        $this->sendSSE('done', [
+                            'status'        => $status,
+                            'error_message' => $data['error_message'] ?? null,
+                        ]);
+                        $redis->disconnect();
+                    }
+                });
+
+                if ($subscribedNormally) {
+                    break;
                 }
-            });
-        } catch (RedisException) {
+            } catch (RedisException) {
+                // read_timeout — fall through to DB re-check.
+            }
+
+            /** @var SyncJob|null $fresh */
+            $fresh = SyncJob::find($syncJobId);
+            if ($fresh !== null && in_array($fresh->status, [SyncStatus::Success, SyncStatus::Failed], true)) {
+                $this->sendSSE('done', [
+                    'status'        => $fresh->status->value,
+                    'error_message' => $fresh->error_message,
+                ]);
+                break;
+            }
+
+            $this->sendHeartbeat();
+            if (connection_aborted()) {
+                break;
+            }
+
+            // After a read timeout, phpredis leaves the subscribe connection in a state
+            // where the next subscribe() call returns immediately with no events. Purge the
+            // cached singleton so Redis::connection() produces a fresh phpredis client.
+            Redis::purge('subscribe');
+            /** @var PhpRedisConnection $redis */
+            $redis = Redis::connection('subscribe');
         }
     }
 
@@ -152,22 +203,30 @@ class SyncController extends Controller
         return true;
     }
 
-    private function sendCurrentJobState(): void
+    private function sendInitialState(?SyncJob $job): void
     {
-        /** @var SyncJob|null $currentJob */
-        $currentJob = SyncJob::query()
-            ->latest('started_at')
-            ->first();
-
-        if ($currentJob !== null) {
-            $this->sendSSE('state', [
-                'status'        => $currentJob->status->value,
-                'current_step'  => $currentJob->current_step?->value,
-                'error_message' => $currentJob->error_message,
-            ]);
-        } else {
+        if ($job === null) {
             $this->sendSSE('state', ['status' => 'never']);
+
+            return;
         }
+
+        $this->sendSSE('state', [
+            'status'        => $job->status->value,
+            'current_step'  => $job->current_step?->value,
+            'error_message' => $job->error_message,
+        ]);
+    }
+
+    private function sendHeartbeat(): void
+    {
+        echo ": ping\n\n";
+
+        if (connection_aborted()) {
+            return;
+        }
+
+        flush();
     }
 
     /**
