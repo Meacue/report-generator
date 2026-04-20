@@ -26,9 +26,11 @@ export function SyncButton() {
   const handleSync = async () => {
     try {
       await triggerSync.mutateAsync();
+      queryClient.invalidateQueries({ queryKey: ["sync-status"] });
       connect();
     } catch (e) {
       if (ApiError.isApiError(e) && e.status === 409) {
+        queryClient.invalidateQueries({ queryKey: ["sync-status"] });
         connect();
       }
     }

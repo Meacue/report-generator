@@ -6,11 +6,21 @@ interface SyncProgress {
   error_message?: string | null;
 }
 
+const MAX_RETRIES = 5;
+
 export function useSyncSSE() {
   const [progress, setProgress] = useState<SyncProgress | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const disconnectedByUserRef = useRef<boolean>(false);
+  const retryCountRef = useRef<number>(0);
+  const reconnectTimerRef = useRef<number | null>(null);
 
   const connect = useCallback(() => {
+    disconnectedByUserRef.current = false;
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
     eventSourceRef.current?.close();
 
     const es = new EventSource("/api/sync/stream");
@@ -19,8 +29,12 @@ export function useSyncSSE() {
     const handleEvent = (event: MessageEvent) => {
       const data: SyncProgress = JSON.parse(event.data);
       setProgress(data);
+      // reset backoff on any event so transient blips don't exhaust retries
+      retryCountRef.current = 0;
 
       if (data.status === "success" || data.status === "failed") {
+        // suppress reconnect after clean server close on terminal status
+        disconnectedByUserRef.current = true;
         es.close();
         eventSourceRef.current = null;
       }
@@ -33,10 +47,22 @@ export function useSyncSSE() {
     es.onerror = () => {
       es.close();
       eventSourceRef.current = null;
+      if (disconnectedByUserRef.current) return;
+      if (retryCountRef.current >= MAX_RETRIES) return;
+      const delay = Math.min(2000 * 2 ** retryCountRef.current, 15000);
+      retryCountRef.current += 1;
+      reconnectTimerRef.current = window.setTimeout(() => {
+        connect();
+      }, delay);
     };
   }, []);
 
   const disconnect = useCallback(() => {
+    disconnectedByUserRef.current = true;
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
     eventSourceRef.current?.close();
     eventSourceRef.current = null;
     setProgress(null);
@@ -45,6 +71,10 @@ export function useSyncSSE() {
   useEffect(() => {
     return () => {
       eventSourceRef.current?.close();
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
     };
   }, []);
 
