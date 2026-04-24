@@ -9,7 +9,6 @@ use App\Domain\GitLab\Models\Commit;
 use App\Domain\GitLab\Services\BranchParser;
 use App\Domain\GitLab\Services\ConventionalCommitParser;
 use App\Domain\GitLab\Services\GitLabClientInterface;
-use App\Domain\Settings\Models\ProjectMapping;
 use App\Domain\Settings\Models\Setting;
 use App\Domain\Sync\Enums\SyncSource;
 use App\Domain\Sync\Enums\SyncStatus;
@@ -56,79 +55,127 @@ final readonly class SyncGitLab
         $gitlabUsername = $setting?->gitlab_username;
         $gitlabEmail = $setting?->gitlab_email;
 
-        /** @var list<ProjectMapping> $mappings */
-        $mappings = ProjectMapping::all()->all();
+        if ($gitlabUsername === null || $gitlabUsername === '') {
+            Log::warning('GitLab sync: gitlab_username is not configured, skipping sync');
+
+            return 0;
+        }
+
+        $mergeRequests = $this->gitLabClient->getMergeRequests(
+            projectId: null,
+            authorUsername: $gitlabUsername,
+            state: 'all',
+            createdAfter: $since,
+            createdBefore: $until,
+        );
+
+        if ($mergeRequests === []) {
+            return 0;
+        }
+
+        $repoNameMap = $this->buildRepoNameMap($mergeRequests);
+
         $itemsSynced = 0;
 
-        foreach ($mappings as $mapping) {
-            $repoId = $mapping->gitlab_repo_id;
+        foreach ($mergeRequests as $mrData) {
+            $repoId = $mrData['project_id'];
+            $repoName = $repoNameMap[$repoId] ?? null;
+            $branchName = $mrData['source_branch'];
+            $parsed = $this->branchParser->parse($branchName);
 
-            $mergeRequests = $this->gitLabClient->getMergeRequests(
-                projectId: $repoId,
-                authorUsername: $gitlabUsername,
-                state: 'all',
-                createdAfter: $since,
-                createdBefore: $until,
+            /** @var Branch $branch */
+            $branch = Branch::query()->updateOrCreate(
+                [
+                    'gitlab_repo_id' => $repoId,
+                    'branch_name'    => $branchName,
+                ],
+                [
+                    'gitlab_repo_name'     => $repoName,
+                    'parsed_task_number'   => $parsed->parsedTaskNumber?->value,
+                    'parsed_date'          => $parsed->parsedDate,
+                    'parsed_parent_branch' => $parsed->parentBranch,
+                    'parsed_info'          => $parsed->info,
+                    'gitlab_mr_iid'        => $mrData['iid'],
+                    'mr_state'             => $mrData['state'],
+                    'mr_target_branch'     => $mrData['target_branch'],
+                    'mr_web_url'           => $mrData['web_url'],
+                    'mr_title'             => $mrData['title'],
+                    'mr_description'       => $mrData['description'] ?? null,
+                    'mr_merged_at'         => $mrData['merged_at'],
+                    'synced_at'            => CarbonImmutable::now(),
+                ],
             );
 
-            foreach ($mergeRequests as $mrData) {
-                $branchName = $mrData['source_branch'];
-                $parsed = $this->branchParser->parse($branchName);
+            $itemsSynced++;
 
-                /** @var Branch $branch */
-                $branch = Branch::query()->updateOrCreate(
+            $this->syncMergeRequestDiffStats($branch, $repoId, $mrData['iid']);
+
+            $commits = $this->gitLabClient->getMergeRequestCommits(
+                projectId: $repoId,
+                mergeRequestIid: $mrData['iid'],
+            );
+
+            foreach ($commits as $commitData) {
+                if (! $this->isCommitByConfiguredAuthor($commitData['author_email'], $gitlabEmail)) {
+                    continue;
+                }
+
+                Commit::query()->updateOrCreate(
+                    ['gitlab_commit_sha' => $commitData['id']],
                     [
-                        'gitlab_repo_id' => $repoId,
-                        'branch_name'    => $branchName,
-                    ],
-                    [
-                        'parsed_task_number'   => $parsed->parsedTaskNumber?->value,
-                        'parsed_date'          => $parsed->parsedDate,
-                        'parsed_parent_branch' => $parsed->parentBranch,
-                        'parsed_info'          => $parsed->info,
-                        'gitlab_mr_iid'        => $mrData['iid'],
-                        'mr_state'             => $mrData['state'],
-                        'mr_target_branch'     => $mrData['target_branch'],
-                        'mr_web_url'           => $mrData['web_url'],
-                        'mr_title'             => $mrData['title'],
-                        'mr_description'       => $mrData['description'] ?? null,
-                        'mr_merged_at'         => $mrData['merged_at'],
-                        'synced_at'            => CarbonImmutable::now(),
+                        'branch_id'         => $branch->id,
+                        'message'           => $commitData['message'],
+                        'conventional_type' => $this->commitParser->extractType($commitData['title']),
+                        'author'            => $commitData['author_name'],
+                        'committed_at'      => $commitData['committed_date'],
+                        'synced_at'         => CarbonImmutable::now(),
                     ],
                 );
 
                 $itemsSynced++;
-
-                $this->syncMergeRequestDiffStats($branch, $repoId, $mrData['iid']);
-
-                $commits = $this->gitLabClient->getMergeRequestCommits(
-                    projectId: $repoId,
-                    mergeRequestIid: $mrData['iid'],
-                );
-
-                foreach ($commits as $commitData) {
-                    if (! $this->isCommitByConfiguredAuthor($commitData['author_email'], $gitlabEmail)) {
-                        continue;
-                    }
-
-                    Commit::query()->updateOrCreate(
-                        ['gitlab_commit_sha' => $commitData['id']],
-                        [
-                            'branch_id'         => $branch->id,
-                            'message'           => $commitData['message'],
-                            'conventional_type' => $this->commitParser->extractType($commitData['title']),
-                            'author'            => $commitData['author_name'],
-                            'committed_at'      => $commitData['committed_date'],
-                            'synced_at'         => CarbonImmutable::now(),
-                        ],
-                    );
-
-                    $itemsSynced++;
-                }
             }
         }
 
         return $itemsSynced;
+    }
+
+    /**
+     * Build a map of GitLab project_id => human-readable repo name.
+     *
+     * Uses /projects once per sync, restricted to the project_ids referenced
+     * by the MRs we just fetched. Falls back to an empty map when the projects
+     * endpoint is unavailable — branches just get a null name in that case.
+     *
+     * @param  array<int, array{project_id: int, ...}>  $mergeRequests
+     * @return array<int, string>
+     */
+    private function buildRepoNameMap(array $mergeRequests): array
+    {
+        /** @var array<int, true> $referencedIds */
+        $referencedIds = [];
+        foreach ($mergeRequests as $mr) {
+            $referencedIds[$mr['project_id']] = true;
+        }
+
+        try {
+            $projects = $this->gitLabClient->getProjects();
+        } catch (\Throwable $e) {
+            Log::warning('GitLab sync: failed to fetch projects for repo-name map', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        /** @var array<int, string> $map */
+        $map = [];
+        foreach ($projects as $project) {
+            if (isset($referencedIds[$project['id']])) {
+                $map[$project['id']] = $project['path_with_namespace'];
+            }
+        }
+
+        return $map;
     }
 
     private function syncMergeRequestDiffStats(Branch $branch, int $repoId, int $mrIid): void

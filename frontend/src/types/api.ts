@@ -1,12 +1,3 @@
-export interface ProjectMapping {
-  id: number;
-  gitlab_repo_id: number;
-  gitlab_repo_name: string;
-  bitrix24_project_id: number;
-  bitrix24_project_name: string;
-  created_at: string | null;
-}
-
 export interface SyncStatus {
   status: "never" | "success" | "failed" | "in_progress";
   current_step?: "gitlab" | "bitrix24" | "matching" | null;

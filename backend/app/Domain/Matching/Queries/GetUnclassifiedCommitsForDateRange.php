@@ -6,7 +6,6 @@ namespace App\Domain\Matching\Queries;
 
 use App\Domain\GitLab\Models\Commit;
 use App\Domain\Matching\DTOs\UnclassifiedCommit;
-use App\Domain\Settings\Models\ProjectMapping;
 use App\Domain\Shared\ValueObjects\DateRange;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -32,18 +31,6 @@ final readonly class GetUnclassifiedCommitsForDateRange
             ->orderBy('committed_at')
             ->get();
 
-        $repoIds = $commits
-            ->map(static fn (Commit $commit): ?int => $commit->branch?->gitlab_repo_id)
-            ->filter()
-            ->unique()
-            ->values();
-
-        /** @var array<int, string> $repoNameMap */
-        $repoNameMap = ProjectMapping::query()
-            ->whereIn('gitlab_repo_id', $repoIds)
-            ->pluck('gitlab_repo_name', 'gitlab_repo_id')
-            ->all();
-
         $result = [];
 
         foreach ($commits as $commit) {
@@ -54,7 +41,7 @@ final readonly class GetUnclassifiedCommitsForDateRange
             }
 
             $result[] = new UnclassifiedCommit(
-                repoName: $repoNameMap[$branch->gitlab_repo_id] ?? '',
+                repoName: $branch->gitlab_repo_name ?? '',
                 message: $commit->message,
                 branchName: $branch->branch_name,
             );
