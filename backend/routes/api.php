@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\InboxController;
-use App\Http\Controllers\ProjectMappingController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SyncController;
@@ -22,12 +21,6 @@ Route::post('/inbox/assign', [InboxController::class, 'assign'])->name('inbox.as
 Route::post('/inbox/bulk-assign', [InboxController::class, 'bulkAssign'])->name('inbox.bulk-assign');
 Route::post('/inbox/ignore', [InboxController::class, 'ignore'])->name('inbox.ignore');
 Route::post('/inbox/create-task', [InboxController::class, 'createTask'])->name('inbox.create-task');
-
-// Project Mappings
-Route::get('/projects/mappings', [ProjectMappingController::class, 'index'])->name('mappings.index');
-Route::post('/projects/mappings', [ProjectMappingController::class, 'store'])->name('mappings.store');
-Route::put('/projects/mappings/{mapping}', [ProjectMappingController::class, 'update'])->name('mappings.update');
-Route::delete('/projects/mappings/{mapping}', [ProjectMappingController::class, 'destroy'])->name('mappings.destroy');
 
 // Reports
 Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

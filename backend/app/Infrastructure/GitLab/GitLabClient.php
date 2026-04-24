@@ -123,7 +123,7 @@ final class GitLabClient implements GitLabClientInterface
      * {@inheritDoc}
      */
     public function getMergeRequests(
-        int $projectId,
+        ?int $projectId = null,
         ?string $authorUsername = null,
         string $state = 'all',
         ?string $createdAfter = null,
@@ -146,9 +146,14 @@ final class GitLabClient implements GitLabClientInterface
             $query['created_before'] = $createdBefore;
         }
 
-        $endpoint = "/projects/{$projectId}/merge_requests";
+        if ($projectId !== null) {
+            $endpoint = "/projects/{$projectId}/merge_requests";
+        } else {
+            $endpoint = '/merge_requests';
+            $query['scope'] = 'all';
+        }
 
-        /** @var array<int, array{iid: int, title: string, description: string|null, source_branch: string, target_branch: string, state: string, author: array{username: string}, web_url: string, created_at: string, updated_at: string, merged_at: string|null}> $result */
+        /** @var array<int, array{iid: int, project_id: int, title: string, description: string|null, source_branch: string, target_branch: string, state: string, author: array{username: string}, web_url: string, created_at: string, updated_at: string, merged_at: string|null}> $result */
         $result = $this->fetchAllPages($endpoint, $query);
 
         return $result;

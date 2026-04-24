@@ -54,15 +54,20 @@ interface GitLabClientInterface
     ): array;
 
     /**
-     * Get merge requests for a project.
+     * Get merge requests.
      *
-     * @param  int  $projectId  GitLab project ID
+     * When $projectId is null, hits the user-scoped /merge_requests endpoint
+     * (scope=all) which returns MRs across every project the token can see;
+     * in that case each item also includes its `project_id`.
+     *
+     * @param  int|null  $projectId  GitLab project ID, or null for user-wide scope
      * @param  string|null  $authorUsername  Filter by author username
      * @param  string  $state  Filter by state: opened, closed, merged, all
      * @param  string|null  $createdAfter  ISO 8601 date filter
      * @param  string|null  $createdBefore  ISO 8601 date filter
      * @return array<int, array{
      *     iid: int,
+     *     project_id: int,
      *     title: string,
      *     source_branch: string,
      *     target_branch: string,
@@ -76,7 +81,7 @@ interface GitLabClientInterface
      * }>
      */
     public function getMergeRequests(
-        int $projectId,
+        ?int $projectId = null,
         ?string $authorUsername = null,
         string $state = 'all',
         ?string $createdAfter = null,

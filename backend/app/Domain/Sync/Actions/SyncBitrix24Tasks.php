@@ -8,15 +8,24 @@ use App\Domain\Bitrix24\Enums\ParticipationRole;
 use App\Domain\Bitrix24\Enums\TaskStatus;
 use App\Domain\Bitrix24\Models\Task;
 use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
-use App\Domain\Settings\Models\ProjectMapping;
 use App\Domain\Settings\Models\Setting;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
- * Sync all Bitrix24 tasks for the configured user across all project mappings.
+ * Sync all Bitrix24 tasks where the configured user participates
+ * (creator / responsible / accomplice / auditor).
  *
- * Uses the MEMBER filter so every role (creator, responsible, accomplice,
- * auditor) is captured in a single API call per project.
+ * Strategy:
+ *   1. Try a single user-wide call (MEMBER filter, no GROUP_ID). This is the
+ *      happy path — one HTTP request, deduplicated server-side.
+ *   2. If that call fails (Bitrix24 is known to reject tasks.task.list without
+ *      GROUP_ID on some instances), fall back to iterating every group
+ *      returned by sonet_group.get and merging the per-group results.
+ *
+ * Tasks are upserted by bitrix24_task_id, so repeated runs are idempotent
+ * regardless of which branch produced them.
  */
 class SyncBitrix24Tasks
 {
@@ -37,43 +46,145 @@ class SyncBitrix24Tasks
             : null;
 
         if ($bitrix24UserId === null) {
+            Log::warning('Bitrix24 tasks sync: bitrix24_user_id is not configured, skipping sync');
+
             return 0;
         }
 
-        /** @var list<ProjectMapping> $mappings */
-        $mappings = ProjectMapping::all()->all();
+        $tasks = $this->fetchTasksForUser($bitrix24UserId);
         $itemsSynced = 0;
 
-        foreach ($mappings as $mapping) {
-            /** @var int $groupId */
-            $groupId = $mapping->bitrix24_project_id;
-
-            $tasks = $this->bitrix24Client->getTasks(
-                userId: $bitrix24UserId,
-                groupId: $groupId,
+        foreach ($tasks as $taskData) {
+            Task::query()->updateOrCreate(
+                ['bitrix24_task_id' => (int) $taskData['id']],
+                [
+                    'title'               => $taskData['title'],
+                    'status'              => $this->mapBitrix24Status($taskData['status']),
+                    'project_id'          => $taskData['groupId'] !== '' ? (int) $taskData['groupId'] : null,
+                    'project_name'        => $taskData['group']['name'],
+                    'participation_roles' => $this->resolveParticipationRoles($taskData, $bitrix24UserId),
+                    'is_external'         => false,
+                    'bitrix24_url'        => $taskData['url'],
+                    'status_changed_at'   => $taskData['closedDate'],
+                    'synced_at'           => CarbonImmutable::now(),
+                ],
             );
 
-            foreach ($tasks as $taskData) {
-                Task::query()->updateOrCreate(
-                    ['bitrix24_task_id' => (int) $taskData['id']],
-                    [
-                        'title'               => $taskData['title'],
-                        'status'              => $this->mapBitrix24Status($taskData['status']),
-                        'project_id'          => (int) $taskData['groupId'],
-                        'project_name'        => $taskData['group']['name'],
-                        'participation_roles' => $this->resolveParticipationRoles($taskData, $bitrix24UserId),
-                        'is_external'         => false,
-                        'bitrix24_url'        => $taskData['url'],
-                        'status_changed_at'   => $taskData['closedDate'],
-                        'synced_at'           => CarbonImmutable::now(),
-                    ],
-                );
-
-                $itemsSynced++;
-            }
+            $itemsSynced++;
         }
 
         return $itemsSynced;
+    }
+
+    /**
+     * Fetch all tasks the user participates in, with a fallback strategy.
+     *
+     * @return list<array{
+     *     id: string,
+     *     title: string,
+     *     status: string,
+     *     statusComplete: string,
+     *     groupId: string,
+     *     group: array{id: string, name: string},
+     *     closedDate: string|null,
+     *     url: string,
+     *     createdBy: string,
+     *     responsibleId: string,
+     *     accomplices: list<string>,
+     *     auditors: list<string>
+     * }>
+     */
+    private function fetchTasksForUser(string $userId): array
+    {
+        try {
+            return array_values($this->bitrix24Client->getTasks(
+                userId: $userId,
+                groupId: null,
+            ));
+        } catch (Throwable $e) {
+            Log::warning('Bitrix24 tasks sync: user-wide fetch failed, falling back to per-group', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->fetchTasksPerGroup($userId);
+        }
+    }
+
+    /**
+     * Fallback: enumerate every group the user belongs to and aggregate
+     * their tasks, deduplicating by bitrix24 task id.
+     *
+     * @return list<array{
+     *     id: string,
+     *     title: string,
+     *     status: string,
+     *     statusComplete: string,
+     *     groupId: string,
+     *     group: array{id: string, name: string},
+     *     closedDate: string|null,
+     *     url: string,
+     *     createdBy: string,
+     *     responsibleId: string,
+     *     accomplices: list<string>,
+     *     auditors: list<string>
+     * }>
+     */
+    private function fetchTasksPerGroup(string $userId): array
+    {
+        try {
+            $groups = $this->bitrix24Client->getProjects();
+        } catch (Throwable $e) {
+            Log::error('Bitrix24 tasks sync: sonet_group.get failed, cannot enumerate groups', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        /** @var array<string, array{
+         *     id: string,
+         *     title: string,
+         *     status: string,
+         *     statusComplete: string,
+         *     groupId: string,
+         *     group: array{id: string, name: string},
+         *     closedDate: string|null,
+         *     url: string,
+         *     createdBy: string,
+         *     responsibleId: string,
+         *     accomplices: list<string>,
+         *     auditors: list<string>
+         * }> $deduped
+         */
+        $deduped = [];
+
+        foreach ($groups as $group) {
+            $groupId = (int) $group['id'];
+
+            if ($groupId <= 0) {
+                continue;
+            }
+
+            try {
+                $tasks = $this->bitrix24Client->getTasks(
+                    userId: $userId,
+                    groupId: $groupId,
+                );
+            } catch (Throwable $e) {
+                Log::warning('Bitrix24 tasks sync: per-group fetch failed, skipping group', [
+                    'group_id' => $groupId,
+                    'error'    => $e->getMessage(),
+                ]);
+
+                continue;
+            }
+
+            foreach ($tasks as $task) {
+                $deduped[$task['id']] = $task;
+            }
+        }
+
+        return array_values($deduped);
     }
 
     /**

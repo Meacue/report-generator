@@ -4,7 +4,6 @@ const navItems = [
   { path: "/", label: "Панель" },
   { path: "/inbox", label: "Входящие" },
   { path: "/reports", label: "Отчёты" },
-  { path: "/projects", label: "Проекты" },
   { path: "/settings", label: "Настройки" },
 ];
 

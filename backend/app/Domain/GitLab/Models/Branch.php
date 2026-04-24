@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $gitlab_repo_id
+ * @property string|null $gitlab_repo_name
  * @property string $branch_name
  * @property int|null $parsed_task_number
  * @property Carbon|null $parsed_date
@@ -48,6 +49,7 @@ class Branch extends Model
 
     protected $fillable = [
         'gitlab_repo_id',
+        'gitlab_repo_name',
         'branch_name',
         'parsed_task_number',
         'parsed_date',
