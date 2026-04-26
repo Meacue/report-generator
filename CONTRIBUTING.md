@@ -19,10 +19,12 @@ git checkout -b feature/my-feature
 
 ### Backend (PHP)
 
-- PHP 8.2+, строгая типизация (`declare(strict_types=1)`)
+- PHP 8.2+, Laravel 12, строгая типизация (`declare(strict_types=1)`)
+- Архитектура — DDD: бизнес-логика в `backend/app/Domain/<Context>/`, адаптеры к внешним системам в `backend/app/Infrastructure/<Context>/` (см. [AGENTS.md](AGENTS.md))
+- Use Cases — `final readonly` Action-классы в `Domain/<Context>/Actions/` с одним публичным методом `__invoke()`
+- Внешние клиенты реализуют интерфейс из `Domain/<Context>/Services/` (например, `Bitrix24ClientInterface` → `Infrastructure/Bitrix24/Bitrix24Client`)
 - Стиль кода — PSR-12, проверяется через [Laravel Pint](https://laravel.com/docs/pint)
 - Статический анализ — PHPStan level 10 + Larastan
-- Каждый сервис имеет интерфейс
 - Английский язык в коде и комментариях
 
 ### Frontend (TypeScript)

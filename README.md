@@ -25,7 +25,8 @@
 ```bash
 git clone https://github.com/your-username/report-generator.git
 cd report-generator
-45```
+```
+
 2. **Скопируйте файлы окружения и заполните секреты:**
 
 ```bash
@@ -35,7 +36,7 @@ cp backend/.env.example backend/.env
 
 Отредактируйте `backend/.env` — укажите токены GitLab, Bitrix24 и LLM-провайдера (см. раздел «Конфигурация»).
 
-2. **Запустите проект:**
+3. **Запустите проект:**
 
 ```bash
 make build
@@ -43,7 +44,7 @@ make up
 make migrate
 ```
 
-3. **Откройте в браузере:**
+4. **Откройте в браузере:**
 
 - Frontend: [http://localhost:5173](http://localhost:5173)
 - Backend API: [http://localhost:8000](http://localhost:8000)
@@ -94,13 +95,15 @@ make logs        # Логи контейнеров
 
 ## Стек технологий
 
-- **Backend:** PHP 8.2+ / Laravel 11
-- **Frontend:** React (TypeScript) / Vite
+- **Backend:** PHP 8.2+ / Laravel 12 (DDD: `app/Domain/` + `app/Infrastructure/`)
+- **Frontend:** React 18 (TypeScript) / Vite
 - **БД:** SQLite
 - **Очереди:** Redis + Laravel Queue
 - **Генерация Word:** PHPWord
 - **LLM:** Anthropic Claude API / OpenAI API
 - **Контейнеризация:** Docker Compose
+
+Подробнее о структуре кода — в [AGENTS.md](AGENTS.md) (раздел «Доменный и инфраструктурный слои»). Backend-специфика — в [backend/README.md](backend/README.md), frontend-специфика — в [frontend/README.md](frontend/README.md).
 
 ## Участие в разработке
 
