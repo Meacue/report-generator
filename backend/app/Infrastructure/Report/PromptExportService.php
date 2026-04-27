@@ -51,8 +51,7 @@ class PromptExportService implements PromptExportServiceInterface
         $lines[] = '';
         $lines[] = '--- СВОДКА ОТЧЁТА ---';
         $lines[] = '';
-        $lines[] = 'Разработчик: ' . $developerName;
-        $lines[] = 'Должность: ' . $developerPosition;
+        $lines[] = 'Должность разработчика: ' . $developerPosition;
         $lines[] = 'Период: ' . $report->date_from->format('Y-m-d') . ' — ' . $report->date_to->format('Y-m-d');
         $lines[] = 'Тип отчёта: ' . $this->translateReportType($report->type);
         $lines[] = '';
