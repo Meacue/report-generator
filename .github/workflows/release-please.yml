@@ -14,10 +14,8 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
-          # Использует встроенный GITHUB_TOKEN; PAT нужен только если хочешь
-          # триггерить другие workflows из release-PR (сейчас не нужно).
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
