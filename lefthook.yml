@@ -1,0 +1,93 @@
+# Lefthook — Git hooks manager.
+# Документация: https://lefthook.dev/
+#
+# Установка хуков (один раз после клона репозитория):
+#   npx lefthook install
+#
+# Хуки проверяют:
+#   commit-msg → формат сообщения коммита (Conventional Commits)
+#   pre-commit → имя ветки (Conventional Branch) + линтеры на staged-файлах
+#   pre-push   → быстрые тесты (опционально)
+
+commit-msg:
+  commands:
+    commitlint:
+      run: npx --no-install commitlint --edit {1}
+
+pre-commit:
+  parallel: true
+  commands:
+    branch-name:
+      # Conventional Branch — допустимые формы:
+      #   <type>/<slug>                  feat/conventional-branches
+      #   <type>/<issue#>                feat/4
+      #   <type>/#<issue#>               feat/#4
+      #   <type>/<issue#>-<slug>         feat/9-conventional-branches
+      #   <type>/#<issue#>-<slug>        feat/#9-conventional-branches
+      #   release/<MAJOR>.<MINOR>.<PATCH>     release/0.2.0
+      #
+      # Slug опционален (можно ограничиться номером issue).
+      # Префикс '#' перед номером — опционален (для совместимости с GitHub-стилем).
+      # master/main/HEAD игнорируются — на них не коммитят напрямую.
+      run: |
+        BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        if [ "$BRANCH" = "master" ] || [ "$BRANCH" = "main" ] || [ "$BRANCH" = "HEAD" ]; then
+          exit 0
+        fi
+        # Release-ветки: версии с точками (release/X.Y.Z или release/X.Y.Z-rc1).
+        if echo "$BRANCH" | grep -qE '^release/[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+)?$'; then
+          exit 0
+        fi
+        # Все остальные типы: <type>/[#]<slug-or-issue>
+        if echo "$BRANCH" | grep -qE '^(feat|fix|hotfix|chore|docs|refactor|perf|test|ci|build|style|security|deps)/#?[a-z0-9]+(-[a-z0-9]+)*$'; then
+          exit 0
+        fi
+        echo ""
+        echo "✗ Имя ветки '$BRANCH' не соответствует Conventional Branch."
+        echo ""
+        echo "  Формат: <type>/<slug>            или"
+        echo "          <type>/<issue#>          или"
+        echo "          <type>/#<issue#>         или"
+        echo "          <type>/<issue#>-<slug>   или"
+        echo "          <type>/#<issue#>-<slug>"
+        echo ""
+        echo "  Типы:   feat fix hotfix chore docs refactor perf test ci build style security deps"
+        echo "          release  (только для версий: release/X.Y.Z)"
+        echo ""
+        echo "  Примеры:"
+        echo "    feat/4"
+        echo "    feat/#4"
+        echo "    feat/9-conventional-branches"
+        echo "    feat/#9-conventional-branches"
+        echo "    fix/12-bitrix-comments-encoding"
+        echo "    chore/update-deps"
+        echo "    release/0.2.0"
+        echo ""
+        echo "  Чтобы переименовать: git branch -m <new-name>"
+        echo ""
+        exit 1
+    pint:
+      glob: "backend/**/*.php"
+      run: docker compose exec -T app ./vendor/bin/pint --test {staged_files}
+      skip:
+        - merge
+        - rebase
+    phpstan:
+      glob: "backend/**/*.php"
+      run: docker compose exec -T app ./vendor/bin/phpstan analyse --no-progress
+      skip:
+        - merge
+        - rebase
+    eslint:
+      glob: "frontend/**/*.{ts,tsx,js,jsx}"
+      root: "frontend/"
+      run: npx eslint {staged_files}
+      skip:
+        - merge
+        - rebase
+
+# pre-push можно включить когда тесты будут стабильно зелёными.
+# pre-push:
+#   commands:
+#     phpunit:
+#       run: docker compose exec -T app ./vendor/bin/phpunit --testsuite=Unit
