@@ -1,0 +1,15 @@
+{
+  "name": "report-generator-tooling",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Repository-level dev tooling (lefthook git hooks + commitlint). Не путать с frontend/package.json — это отдельная зона ответственности.",
+  "scripts": {
+    "prepare": "lefthook install",
+    "commitlint": "commitlint --edit"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "lefthook": "^1.7.22"
+  }
+}
