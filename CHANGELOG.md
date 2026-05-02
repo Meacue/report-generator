@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Meacue/report-generator/compare/0.2.0...0.2.1) (2026-05-02)
+
+
+### Changed
+
+* configure Dependabot version updates for composer, npm, github-actions ([e7fba99](https://github.com/Meacue/report-generator/commit/e7fba99db83e45df23d3db372e45a2f968109cae)), closes [#46](https://github.com/Meacue/report-generator/issues/46)
+
 ## [0.2.0](https://github.com/Meacue/report-generator/compare/0.1.0...0.2.0) (2026-04-30)
 
 
