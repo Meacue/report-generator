@@ -169,6 +169,26 @@ make test   # запуск тестов
 
 PR-ветки мерджатся через **squash & merge**: каждая ветка → один коммит на `master`. Это держит историю плоской и release-please видит чистый поток conventional commits.
 
+## Управление зависимостями
+
+Зависимости обновляет [Dependabot](https://docs.github.com/en/code-security/dependabot) — built-in в GitHub. Конфиг в [`.github/dependabot.yml`](.github/dependabot.yml).
+
+**Два независимых механизма:**
+
+1. **Security updates** — открываются автоматически при появлении CVE в зависимостях.
+2. **Version updates** — еженедельные обновления зависимостей до последних версий. Конфигурируются в `dependabot.yml`.
+
+**Что мониторится:**
+
+- `composer` в `/backend` — еженедельно
+- `npm` в `/frontend` — еженедельно
+- `npm` в `/` (root tooling: lefthook + commitlint) — раз в месяц
+- `github-actions` в `/` — раз в месяц
+
+**Группы пакетов** (один PR на группу вместо одного на пакет): laravel + illuminate, react-stack, eslint-stack, php-testing, dev-deps.
+
+**Conventional Commits:** Dependabot коммитит как `deps(scope): bump foo from 1.2.0 to 1.2.3` — попадает в нашу `commitlint`-схему (`deps:` тип в enum) и release-please мапит в секцию `Changed` CHANGELOG'а.
+
 ## Релизы
 
 Релизами управляет [release-please](https://github.com/googleapis/release-please) автоматически:
