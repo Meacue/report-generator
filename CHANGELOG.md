@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/Meacue/report-generator/compare/0.2.3...0.2.4) (2026-05-03)
+
+
+### Changed
+
+* bump the react group across 1 directory with 5 updates ([#52](https://github.com/Meacue/report-generator/issues/52)) ([d043261](https://github.com/Meacue/report-generator/commit/d0432614f0c7cc8e54cc79b2cf5445446d9adf7e))
+
 ## [0.2.3](https://github.com/Meacue/report-generator/compare/0.2.2...0.2.3) (2026-05-03)
 
 
