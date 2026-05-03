@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/Meacue/report-generator/compare/0.2.4...0.2.5) (2026-05-03)
+
+
+### Changed
+
+* bump typescript from 5.6.3 to 6.0.3 in /frontend ([#56](https://github.com/Meacue/report-generator/issues/56)) ([5244883](https://github.com/Meacue/report-generator/commit/5244883de9b5e778834e3e6cb84d91a65428bcb3))
+
 ## [0.2.4](https://github.com/Meacue/report-generator/compare/0.2.3...0.2.4) (2026-05-03)
 
 
