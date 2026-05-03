@@ -20,12 +20,12 @@ updates:
       - "backend"
     commit-message:
       prefix: "deps"
-      include: "scope"
     groups:
       laravel:
         patterns:
           - "laravel/*"
           - "illuminate/*"
+        update-types: ["minor", "patch"]
       php-testing:
         patterns:
           - "phpunit/*"
@@ -33,6 +33,7 @@ updates:
           - "fakerphp/*"
           - "larastan/*"
           - "nunomaduro/collision"
+        update-types: ["minor", "patch"]
       dev-deps:
         dependency-type: "development"
         exclude-patterns:
@@ -40,6 +41,7 @@ updates:
           - "mockery/*"
           - "fakerphp/*"
           - "larastan/*"
+        update-types: ["minor", "patch"]
 
   # ─── Frontend (NPM) ───────────────────────────────────────────
   - package-ecosystem: "npm"
@@ -55,8 +57,8 @@ updates:
       - "frontend"
     commit-message:
       prefix: "deps"
-      include: "scope"
     groups:
+      # React stack — major bumps идут бандлом (peer-dependencies должны двигаться вместе).
       react:
         patterns:
           - "react"
@@ -71,15 +73,18 @@ updates:
           - "@typescript-eslint/*"
           - "eslint-plugin-*"
           - "typescript-eslint"
+        update-types: ["minor", "patch"]
       tanstack:
         patterns:
           - "@tanstack/*"
+        update-types: ["minor", "patch"]
       types:
         patterns:
           - "@types/*"
         exclude-patterns:
           - "@types/react"
           - "@types/react-dom"
+        update-types: ["minor", "patch"]
 
   # ─── Root tooling (NPM: lefthook + commitlint) ────────────────
   - package-ecosystem: "npm"
@@ -99,6 +104,7 @@ updates:
       commitlint:
         patterns:
           - "@commitlint/*"
+        update-types: ["minor", "patch"]
 
   # ─── GitHub Actions ───────────────────────────────────────────
   - package-ecosystem: "github-actions"
@@ -114,4 +120,3 @@ updates:
       - "ci"
     commit-message:
       prefix: "ci"
-      include: "scope"
