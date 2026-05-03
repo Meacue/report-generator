@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.2](https://github.com/Meacue/report-generator/compare/0.2.1...0.2.2) (2026-05-03)
+
+
+### Changed
+
+* bump @tanstack/react-query ([#54](https://github.com/Meacue/report-generator/issues/54)) ([6dc19b7](https://github.com/Meacue/report-generator/commit/6dc19b72e6a1a297c5c72ba6d504a752f938d93e))
+* bump lefthook from 1.13.6 to 2.1.6 ([#50](https://github.com/Meacue/report-generator/issues/50)) ([f9b19e4](https://github.com/Meacue/report-generator/commit/f9b19e4b64083033eccdd3eaa930b3a791e5872d))
+* bump the dev-deps group across 1 directory with 2 updates ([#59](https://github.com/Meacue/report-generator/issues/59)) ([5a65b73](https://github.com/Meacue/report-generator/commit/5a65b7398c3eebd670dce93f1136ff7ef2f7f560))
+* bump the eslint group across 1 directory with 2 updates ([#60](https://github.com/Meacue/report-generator/issues/60)) ([9dc2350](https://github.com/Meacue/report-generator/commit/9dc23502597d924593a3aef8752cc26de1589189))
+
 ## [0.2.1](https://github.com/Meacue/report-generator/compare/0.2.0...0.2.1) (2026-05-02)
 
 
