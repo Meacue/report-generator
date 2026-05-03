@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/Meacue/report-generator/compare/0.2.2...0.2.3) (2026-05-03)
+
+
+### Changed
+
+* bump globals from 15.15.0 to 17.6.0 in /frontend ([#55](https://github.com/Meacue/report-generator/issues/55)) ([9a93bd1](https://github.com/Meacue/report-generator/commit/9a93bd157c282978ee453b829757a841d92e130b))
+
 ## [0.2.2](https://github.com/Meacue/report-generator/compare/0.2.1...0.2.2) (2026-05-03)
 
 
