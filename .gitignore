@@ -6,6 +6,7 @@
 
 # Окружение
 .env
+.env.*
 !.env.example
 
 # ОС
@@ -16,4 +17,3 @@ Thumbs.db
 CLAUDE.md
 
 node_modules/
-package-lock.json
