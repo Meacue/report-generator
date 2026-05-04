@@ -60,6 +60,9 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('backend/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
+      - name: Prepare Laravel environment
+        run: cp .env.example .env
+
       - name: Install dependencies
         run: composer install --no-progress --prefer-dist --no-interaction
 
@@ -98,13 +101,14 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('backend/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
+      - name: Prepare Laravel environment (.env)
+        run: cp .env.example .env
+
       - name: Install dependencies
         run: composer install --no-progress --prefer-dist --no-interaction
 
-      - name: Prepare Laravel environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate
+      - name: Generate APP_KEY
+        run: php artisan key:generate
 
       - name: Run PHPUnit (Unit + Feature)
         run: vendor/bin/phpunit --testdox
