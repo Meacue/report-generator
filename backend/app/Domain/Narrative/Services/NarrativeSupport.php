@@ -133,7 +133,7 @@ final readonly class NarrativeSupport
         $task->loadMissing('matchResults.branch.commits');
 
         return $task->matchResults
-            ->map(fn ($mr) => $mr->branch)
+            ->map(fn (MatchResult $mr) => $mr->branch)
             ->filter()
             ->values();
     }
