@@ -6,6 +6,7 @@
 
 # Окружение
 .env
+.env.*
 !.env.example
 
 # ОС

@@ -68,6 +68,7 @@ pre-commit:
         exit 1
     pint:
       glob: "backend/**/*.php"
+      root: "backend/"
       run: docker compose exec -T app ./vendor/bin/pint --test {staged_files}
       skip:
         - merge
