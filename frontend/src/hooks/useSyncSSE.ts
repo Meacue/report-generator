@@ -14,6 +14,11 @@ export function useSyncSSE() {
   const disconnectedByUserRef = useRef<boolean>(false);
   const retryCountRef = useRef<number>(0);
   const reconnectTimerRef = useRef<number | null>(null);
+  // Holds the latest `connect` implementation so the reconnect timer can call
+  // it recursively without referring to the binding before it is initialised
+  // (which the react-hooks/immutability rule in eslint-plugin-react-hooks v7
+  // flags as a TDZ access).
+  const connectRef = useRef<() => void>(() => {});
 
   const connect = useCallback(() => {
     disconnectedByUserRef.current = false;
@@ -52,10 +57,16 @@ export function useSyncSSE() {
       const delay = Math.min(2000 * 2 ** retryCountRef.current, 15000);
       retryCountRef.current += 1;
       reconnectTimerRef.current = window.setTimeout(() => {
-        connect();
+        connectRef.current();
       }, delay);
     };
   }, []);
+
+  // Keep the ref in sync with the latest `connect` callback identity so the
+  // recursive reconnect path always uses the current implementation.
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   const disconnect = useCallback(() => {
     disconnectedByUserRef.current = true;
