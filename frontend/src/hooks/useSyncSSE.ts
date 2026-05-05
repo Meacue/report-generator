@@ -14,6 +14,7 @@ export function useSyncSSE() {
   const disconnectedByUserRef = useRef<boolean>(false);
   const retryCountRef = useRef<number>(0);
   const reconnectTimerRef = useRef<number | null>(null);
+  const connectRef = useRef<() => void>(() => {});
 
   const connect = useCallback(() => {
     disconnectedByUserRef.current = false;
@@ -29,11 +30,9 @@ export function useSyncSSE() {
     const handleEvent = (event: MessageEvent) => {
       const data: SyncProgress = JSON.parse(event.data);
       setProgress(data);
-      // reset backoff on any event so transient blips don't exhaust retries
       retryCountRef.current = 0;
 
       if (data.status === "success" || data.status === "failed") {
-        // suppress reconnect after clean server close on terminal status
         disconnectedByUserRef.current = true;
         es.close();
         eventSourceRef.current = null;
@@ -52,10 +51,14 @@ export function useSyncSSE() {
       const delay = Math.min(2000 * 2 ** retryCountRef.current, 15000);
       retryCountRef.current += 1;
       reconnectTimerRef.current = window.setTimeout(() => {
-        connect();
+        connectRef.current();
       }, delay);
     };
   }, []);
+
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   const disconnect = useCallback(() => {
     disconnectedByUserRef.current = true;
