@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.6](https://github.com/Meacue/report-generator/compare/0.2.5...0.2.6) (2026-05-06)
+
+
+### Changed
+
+* bump @tanstack/react-query in /frontend in the tanstack group ([#70](https://github.com/Meacue/report-generator/issues/70)) ([a0b45c6](https://github.com/Meacue/report-generator/commit/a0b45c66e8030fe7aa31a12c01d4628b03246a96))
+* bump @types/node from 20.19.39 to 25.6.0 in /frontend ([#74](https://github.com/Meacue/report-generator/issues/74)) ([490fb89](https://github.com/Meacue/report-generator/commit/490fb893e1b532de0494d524bb067c9812d65b6b))
+* bump eslint from 9.39.4 to 10.3.0 in /frontend ([#73](https://github.com/Meacue/report-generator/issues/73)) ([fadc0b0](https://github.com/Meacue/report-generator/commit/fadc0b056e2653a299b9355a58a5169fa614023c))
+* bump larastan/larastan in /backend in the php-testing group ([#67](https://github.com/Meacue/report-generator/issues/67)) ([e99e961](https://github.com/Meacue/report-generator/commit/e99e961dc4d487649f06faedd5641d5f6b7a6194))
+* bump laravel/pint in /backend in the dev-deps group ([#68](https://github.com/Meacue/report-generator/issues/68)) ([68290c7](https://github.com/Meacue/report-generator/commit/68290c7eb897a19b5bea69fcb2cbefe9ccb905d8))
+* bump laravel/tinker from 2.11.1 to 3.0.2 in /backend ([#69](https://github.com/Meacue/report-generator/issues/69)) ([67abd5c](https://github.com/Meacue/report-generator/commit/67abd5c94f060cac492b893de44365906ff5ab45))
+* bump react-router-dom from 7.13.1 to 7.14.2 in /frontend ([#71](https://github.com/Meacue/report-generator/issues/71)) ([8972fc8](https://github.com/Meacue/report-generator/commit/8972fc8997407da4709d84df41d94794934b4a7f))
+* **frontend:** bump eslint-plugin-react-hooks to v7 + comply with new lint rules ([#81](https://github.com/Meacue/report-generator/issues/81)) ([63ff253](https://github.com/Meacue/report-generator/commit/63ff2535f4a67072daabc424f7ed5914ce776873))
+
 ## [0.2.5](https://github.com/Meacue/report-generator/compare/0.2.4...0.2.5) (2026-05-03)
 
 
