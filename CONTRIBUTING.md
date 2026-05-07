@@ -1,82 +1,82 @@
-# Участие в разработке
+# Contributing
 
-Рад приветствовать ваш вклад в Report Generator. Ниже — правила работы с репозиторием.
+Contributions to Report Generator are very welcome. Below are the rules for working with the repository.
 
-## Начало работы
+## Getting started
 
-1. Сделайте форк репозитория.
-2. Клонируйте форк, установите зависимости и git-хуки:
+1. Fork the repository.
+2. Clone your fork, install dependencies and git hooks:
 
 ```bash
 git clone https://github.com/your-username/report-generator.git
 cd report-generator
-npm install              # ставит lefthook + commitlint
-npx lefthook install     # активирует git-хуки локально
+npm install              # installs lefthook + commitlint
+npx lefthook install     # activates git hooks locally
 ```
 
-3. Разверните проект (см. «Быстрый старт» в [README.md](README.md)).
+3. Set up the project (see "Quick start" in [README.md](README.md)).
 
-## Issues — точка входа для любой задачи
+## Issues — the entry point for every task
 
-Любое изменение начинается с GitHub Issue. Это касается и багов, и фич, и правок документации, и обновлений зависимостей. Принцип «Either Bugs or Pull Requests» — каждое изменение должно быть связано с issue, чтобы:
+Every change starts with a GitHub Issue. This applies to bugs, features, documentation tweaks and dependency updates alike. The "Either Bugs or Pull Requests" principle — every change must be linked to an issue — keeps:
 
-- цепочка `issue → branch → commit → PR → release → CHANGELOG` оставалась трассируемой;
-- release-please мог автоматически линковать релиз с issues;
-- история проекта была самодокументируемой.
+- the `issue → branch → commit → PR → release → CHANGELOG` chain traceable;
+- release-please able to auto-link releases to issues;
+- the project history self-documenting.
 
-Шаблоны issues в [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/).
+Issue templates live in [.github/ISSUE_TEMPLATE/](.github/ISSUE_TEMPLATE/).
 
-## Именование веток — Conventional Branch
+## Branch naming — Conventional Branch
 
-**Формат — пять допустимых форм:**
+**Format — five accepted forms:**
 
-| Форма | Когда использовать | Пример |
+| Form | When to use | Example |
 |---|---|---|
-| `<type>/<slug>` | задача без issue | `chore/update-deps` |
-| `<type>/<issue#>` | есть issue, slug избыточен | `feat/4` |
-| `<type>/#<issue#>` | то же, GitHub-стиль с `#` | `feat/#4` |
-| `<type>/<issue#>-<slug>` | issue + читаемое имя | `feat/9-conventional-branches` |
-| `<type>/#<issue#>-<slug>` | то же с `#` | `feat/#9-conventional-branches` |
-| `release/<MAJOR>.<MINOR>.<PATCH>` | подготовка релиза (точки разрешены только тут) | `release/0.2.0`, `release/1.0.0-rc1` |
+| `<type>/<slug>` | task without an issue | `chore/update-deps` |
+| `<type>/<issue#>` | issue exists, slug is redundant | `feat/4` |
+| `<type>/#<issue#>` | same, GitHub-style with `#` | `feat/#4` |
+| `<type>/<issue#>-<slug>` | issue + readable name | `feat/9-conventional-branches` |
+| `<type>/#<issue#>-<slug>` | same with `#` | `feat/#9-conventional-branches` |
+| `release/<MAJOR>.<MINOR>.<PATCH>` | release preparation (dots are allowed only here) | `release/0.2.0`, `release/1.0.0-rc1` |
 
-Slug опционален — если issue достаточно описывает задачу, ограничьтесь номером. Префикс `#` опционален и не влияет ни на что (визуальная синхронизация с GitHub).
+The slug is optional — if the issue describes the task well enough, just use the number. The `#` prefix is optional and has no effect (purely a visual sync with GitHub).
 
-**Допустимые типы:**
+**Allowed types:**
 
-| Тип | Назначение |
+| Type | Purpose |
 |---|---|
-| `feat/` | новая функциональность |
-| `fix/` | исправление бага |
-| `hotfix/` | срочный прод-патч |
-| `chore/` | служебные задачи (зависимости, конфиги) |
-| `docs/` | документация |
-| `refactor/` | рефакторинг без изменения поведения |
-| `perf/` | оптимизация |
-| `test/` | тесты |
-| `ci/` | конфигурация CI |
-| `build/` | сборка/Docker |
-| `style/` | форматирование |
-| `security/` | патчи безопасности |
-| `deps/` | обновление зависимостей |
-| `release/` | подготовка релиза |
+| `feat/` | new functionality |
+| `fix/` | bug fix |
+| `hotfix/` | urgent prod patch |
+| `chore/` | housekeeping (dependencies, configs) |
+| `docs/` | documentation |
+| `refactor/` | refactor with no behavior change |
+| `perf/` | optimization |
+| `test/` | tests |
+| `ci/` | CI configuration |
+| `build/` | build / Docker |
+| `style/` | formatting |
+| `security/` | security patches |
+| `deps/` | dependency updates |
+| `release/` | release preparation |
 
-**Правила имени:** только `a-z`, `0-9`, `-` и опциональный `#` перед issue-номером. Lowercase. Не более ~50 символов. Никаких `_`, пробелов, эмодзи; никаких ведущих/висящих/двойных дефисов; никаких точек кроме `release/`.
+**Name rules:** only `a-z`, `0-9`, `-` and an optional `#` before the issue number. Lowercase. No more than ~50 characters. No `_`, spaces, or emoji; no leading, trailing, or doubled dashes; no dots except in `release/`.
 
-**Примеры:**
-- `feat/4` — минимальная форма с issue
-- `feat/#4` — то же с GitHub-префиксом
-- `feat/9-conventional-branches` — фича по issue #9
-- `fix/12-bitrix-comments-encoding` — баг по issue #12
-- `chore/update-deps` — без issue
-- `release/0.2.0` — release-PR
+**Examples:**
+- `feat/4` — minimal form with an issue
+- `feat/#4` — same with the GitHub-style prefix
+- `feat/9-conventional-branches` — feature for issue #9
+- `fix/12-bitrix-comments-encoding` — bug for issue #12
+- `chore/update-deps` — without an issue
+- `release/0.2.0` — release PR
 
-Имя ветки проверяется автоматически в pre-commit хуке (lefthook). Подробности — в [lefthook.yml](lefthook.yml).
+The branch name is checked automatically in the pre-commit hook (lefthook). Details — in [lefthook.yml](lefthook.yml).
 
-## Сообщения коммитов — Conventional Commits
+## Commit messages — Conventional Commits
 
-Спека: [conventionalcommits.org/v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
+Spec: [conventionalcommits.org/v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/).
 
-**Формат:**
+**Format:**
 
 ```
 <type>[optional scope]: <description>
@@ -86,29 +86,29 @@ Slug опционален — если issue достаточно описыва
 [optional footer(s)]
 ```
 
-**Типы и связь с CHANGELOG:**
+**Types and CHANGELOG mapping:**
 
-| Тип | Назначение | Секция CHANGELOG | Bump |
+| Type | Purpose | CHANGELOG section | Bump |
 |---|---|---|---|
-| `feat` | новая функциональность | `Added` | MINOR (после 1.0.0) |
-| `fix` | исправление бага | `Fixed` | PATCH |
-| `perf` | оптимизация | `Changed` | PATCH |
-| `refactor` | рефакторинг | `Changed` | PATCH |
-| `revert` | откат коммита | `Removed` | PATCH |
-| `deps` | обновление зависимостей | `Changed` | PATCH |
-| `security` | патч безопасности | `Security` | PATCH |
-| `docs` | документация | скрыто | — |
-| `chore` | служебные задачи | скрыто | — |
-| `test` | тесты | скрыто | — |
-| `ci` | конфигурация CI | скрыто | — |
-| `build` | сборка/Docker | скрыто | — |
-| `style` | форматирование | скрыто | — |
+| `feat` | new functionality | `Added` | MINOR (after 1.0.0) |
+| `fix` | bug fix | `Fixed` | PATCH |
+| `perf` | optimization | `Changed` | PATCH |
+| `refactor` | refactor | `Changed` | PATCH |
+| `revert` | commit revert | `Removed` | PATCH |
+| `deps` | dependency updates | `Changed` | PATCH |
+| `security` | security patch | `Security` | PATCH |
+| `docs` | documentation | hidden | — |
+| `chore` | housekeeping | hidden | — |
+| `test` | tests | hidden | — |
+| `ci` | CI configuration | hidden | — |
+| `build` | build / Docker | hidden | — |
+| `style` | formatting | hidden | — |
 
-**`BREAKING CHANGE`** — указывается в footer или восклицательным знаком после типа: `feat!:`, `fix!:`. Бампит MAJOR (только после 1.0.0; до 1.0.0 — согласно [SemVer §4](https://semver.org/#spec-item-4) — не обязан).
+**`BREAKING CHANGE`** — declared in the footer or with an exclamation mark after the type: `feat!:`, `fix!:`. Bumps MAJOR (only after 1.0.0; before 1.0.0 — per [SemVer §4](https://semver.org/#spec-item-4) — it does not have to).
 
-**Связь с issue** — в footer: `Refs #23` (упоминание) или `Closes #23` (auto-close при мердже).
+**Linking to issues** — in the footer: `Refs #23` (mention) or `Closes #23` (auto-close on merge).
 
-**Примеры:**
+**Examples:**
 
 ```
 feat(bitrix): sanitize PII in comment payload
@@ -129,88 +129,88 @@ BREAKING CHANGE: response wrapper renamed from `data` to `result`.
 Refs #28
 ```
 
-Сообщение коммита проверяется автоматически в commit-msg хуке (lefthook).
+The commit message is checked automatically in the commit-msg hook (lefthook).
 
-## Стандарты кода
+## Code standards
 
 ### Backend (PHP)
 
-- PHP 8.2+, Laravel 12, строгая типизация (`declare(strict_types=1)`).
-- Архитектура — DDD: бизнес-логика в `backend/app/Domain/<Context>/`, адаптеры к внешним системам в `backend/app/Infrastructure/<Context>/` (см. [AGENTS.md](AGENTS.md)).
-- Use Cases — `final readonly` Action-классы в `Domain/<Context>/Actions/` с одним публичным методом `__invoke()`.
-- Внешние клиенты реализуют интерфейс из `Domain/<Context>/Services/` (например, `Bitrix24ClientInterface` → `Infrastructure/Bitrix24/Bitrix24Client`).
-- Стиль кода — PSR-12, проверяется через [Laravel Pint](https://laravel.com/docs/pint).
-- Статический анализ — PHPStan level 10 + Larastan.
-- Английский язык в коде и комментариях.
+- PHP 8.2+, Laravel 12, strict typing (`declare(strict_types=1)`).
+- Architecture — DDD: business logic in `backend/app/Domain/<Context>/`, adapters to external systems in `backend/app/Infrastructure/<Context>/` (see [AGENTS.md](AGENTS.md)).
+- Use Cases — `final readonly` Action classes in `Domain/<Context>/Actions/` with a single public `__invoke()` method.
+- External clients implement an interface from `Domain/<Context>/Services/` (e.g., `Bitrix24ClientInterface` → `Infrastructure/Bitrix24/Bitrix24Client`).
+- Code style — PSR-12, enforced via [Laravel Pint](https://laravel.com/docs/pint).
+- Static analysis — PHPStan level 10 + Larastan.
+- English in code and comments.
 
 ### Frontend (TypeScript)
 
-- TypeScript strict mode, функциональные компоненты.
-- ESLint + Prettier для проверки и форматирования.
+- TypeScript strict mode, functional components.
+- ESLint + Prettier for linting and formatting.
 
-### Проверка перед коммитом
+### Pre-commit checks
 
 ```bash
-make lint   # проверка без исправлений
-make fix    # автоисправление форматирования
-make test   # запуск тестов
+make lint   # check without auto-fix
+make fix    # auto-format
+make test   # run tests
 ```
 
-Линтер запускается автоматически в pre-commit хуке. Если хук не сработал (например, lefthook не установлен) — ваши изменения отвергнет CI.
+The linter runs automatically in the pre-commit hook. If the hook didn't fire (e.g., lefthook isn't installed), CI will reject your changes.
 
 ## Pull Request
 
-1. PR базируется на `master`.
-2. Один PR — одна логическая задача (один issue).
-3. Заголовок PR — в формате Conventional Commits (он же будет single-commit-сообщением при squash-merge).
-4. В описании сошлитесь на issue: `Closes #N` или `Refs #N`.
-5. Убедитесь, что `make lint` и `make test` проходят без ошибок.
-6. Описывайте *что* и *зачем*, а не *как* — *как* видно по diff'у.
+1. PRs are based on `master`.
+2. One PR — one logical task (one issue).
+3. The PR title must follow Conventional Commits (it becomes the single-commit message after squash-merge).
+4. Reference the issue in the description: `Closes #N` or `Refs #N`.
+5. Make sure `make lint` and `make test` pass without errors.
+6. Describe *what* and *why*, not *how* — *how* is visible in the diff.
 
-PR-ветки мерджатся через **squash & merge**: каждая ветка → один коммит на `master`. Это держит историю плоской и release-please видит чистый поток conventional commits.
+PR branches are merged via **squash & merge**: each branch becomes one commit on `master`. This keeps history flat and lets release-please see a clean stream of conventional commits.
 
-## Управление зависимостями
+## Dependency management
 
-Зависимости обновляет [Dependabot](https://docs.github.com/en/code-security/dependabot) — built-in в GitHub. Конфиг в [`.github/dependabot.yml`](.github/dependabot.yml).
+Dependencies are updated by [Dependabot](https://docs.github.com/en/code-security/dependabot) — built into GitHub. Configuration lives in [`.github/dependabot.yml`](.github/dependabot.yml).
 
-**Два независимых механизма:**
+**Two independent mechanisms:**
 
-1. **Security updates** — открываются автоматически при появлении CVE в зависимостях.
-2. **Version updates** — еженедельные обновления зависимостей до последних версий. Конфигурируются в `dependabot.yml`.
+1. **Security updates** — opened automatically when a CVE is detected in dependencies.
+2. **Version updates** — weekly updates of dependencies to the latest versions. Configured in `dependabot.yml`.
 
-**Что мониторится:**
+**What's monitored:**
 
-- `composer` в `/backend` — еженедельно
-- `npm` в `/frontend` — еженедельно
-- `npm` в `/` (root tooling: lefthook + commitlint) — раз в месяц
-- `github-actions` в `/` — раз в месяц
+- `composer` in `/backend` — weekly
+- `npm` in `/frontend` — weekly
+- `npm` in `/` (root tooling: lefthook + commitlint) — monthly
+- `github-actions` in `/` — monthly
 
-**Группы пакетов** (один PR на группу вместо одного на пакет): laravel + illuminate, react-stack, eslint-stack, php-testing, dev-deps.
+**Package groups** (one PR per group instead of one per package): laravel + illuminate, react-stack, eslint-stack, php-testing, dev-deps.
 
-**Conventional Commits:** Dependabot коммитит как `deps(scope): bump foo from 1.2.0 to 1.2.3` — попадает в нашу `commitlint`-схему (`deps:` тип в enum) и release-please мапит в секцию `Changed` CHANGELOG'а.
+**Conventional Commits:** Dependabot commits as `deps(scope): bump foo from 1.2.0 to 1.2.3` — fits our `commitlint` schema (`deps:` is in the type enum) and release-please maps it to the `Changed` CHANGELOG section.
 
-## Релизы
+## Releases
 
-Релизами управляет [release-please](https://github.com/googleapis/release-please) автоматически:
+Releases are managed automatically by [release-please](https://github.com/googleapis/release-please):
 
-1. После мерджа PR в `master` бот сканирует новые conventional commits с прошлого тега.
-2. Бот открывает (или обновляет) **release-PR** с заголовком `chore: release X.Y.Z`. В этом PR:
-   - bump версии в [`.release-please-manifest.json`](.release-please-manifest.json),
-   - обновлённый [`CHANGELOG.md`](CHANGELOG.md) в формате [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — секции `Added` / `Changed` / `Fixed` / `Security` / `Removed` (маппинг типов задан в [`release-please-config.json`](release-please-config.json)).
-3. Когда вы мерджите release-PR — бот:
-   - создаёт git-тег `X.Y.Z` (без префикса `v`),
-   - публикует GitHub Release с автогенерируемыми release notes.
+1. After a PR is merged into `master`, the bot scans for new conventional commits since the last tag.
+2. The bot opens (or updates) a **release PR** titled `chore: release X.Y.Z`. That PR contains:
+   - a version bump in [`.release-please-manifest.json`](.release-please-manifest.json),
+   - an updated [`CHANGELOG.md`](CHANGELOG.md) in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format — `Added` / `Changed` / `Fixed` / `Security` / `Removed` sections (type mapping is defined in [`release-please-config.json`](release-please-config.json)).
+3. When you merge the release PR, the bot:
+   - creates a `X.Y.Z` git tag (no `v` prefix),
+   - publishes a GitHub Release with auto-generated release notes.
 
-**Когда переходить на `1.0.0`** — это решение разработчика, а не бота. До 1.0.0 проект в SemVer-смысле «всё может меняться без BC-предупреждений», поэтому `BREAKING CHANGE` не обязан бампить MAJOR.
+**When to move to `1.0.0`** — that's a developer decision, not the bot's. Before 1.0.0 the project is in the SemVer "everything may change without BC warnings" state, so `BREAKING CHANGE` is not required to bump MAJOR.
 
-## Сообщения об ошибках
+## Bug reports
 
-Создайте [Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml) — шаблон попросит указать всё необходимое.
+Open a [Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml) — the template will ask for everything that's needed.
 
-## Предложения новых возможностей
+## Feature requests
 
-Создайте [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml) — шаблон попросит указать проблему, желаемое поведение и альтернативы.
+Open a [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml) — the template will ask for the problem, the desired behavior and alternatives.
 
-## Кодекс поведения
+## Code of conduct
 
-Участвуя в проекте, вы соглашаетесь соблюдать [Кодекс поведения](CODE_OF_CONDUCT.md).
+By participating in the project you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).

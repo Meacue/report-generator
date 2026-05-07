@@ -1,14 +1,14 @@
 # Frontend — Report Generator
 
-React SPA для генерации отчётов разработчика. Обращается к backend (Laravel 12) через REST API, получает статус синхронизации через Server-Sent Events.
+A React SPA for generating developer reports. It talks to the backend (Laravel 12) over a REST API and receives sync status through Server-Sent Events.
 
-Главный документ проекта — [../AGENTS.md](../AGENTS.md). Здесь — только то, что специфично для `frontend/`.
+The main project document is [../AGENTS.md](../AGENTS.md). This file covers only what's specific to `frontend/`.
 
-## Стек
+## Stack
 
-Версии зафиксированы в [`package.json`](package.json).
+Versions are pinned in [`package.json`](package.json).
 
-| Технология | Версия |
+| Technology | Version |
 | --- | --- |
 | React | 18.3 |
 | TypeScript | 5.6 |
@@ -16,52 +16,52 @@ React SPA для генерации отчётов разработчика. О�
 | React Router DOM | 7.13 |
 | TanStack Query | 5.90 |
 | ESLint | 9.13 (`typescript-eslint` 8.11) |
-| Prettier | конфиг общий с проектом |
+| Prettier | shared project config |
 
-## Структура `src/`
+## Layout of `src/`
 
 ```
 src/
-  api/          модули по доменам — по одному файлу на ресурс
-  hooks/        обёртки над TanStack Query
-  pages/        точки входа маршрутов
-  components/   переиспользуемые блоки, сгруппированные по доменам
-  types/        TypeScript-типы запросов и ответов API
-  utils/        вспомогательные функции
+  api/          modules per domain — one file per resource
+  hooks/        TanStack Query wrappers
+  pages/        route entry points
+  components/   reusable blocks, grouped by domain
+  types/        TypeScript types for API requests and responses
+  utils/        helper functions
 ```
 
-- **`api/`** — `client.ts` обёртка над `fetch` (базовый URL, заголовки, обработка ошибок); `sync.ts`, `reports.ts`, `inbox.ts`, `settings.ts` — по одному файлу на ресурс backend.
-- **`hooks/`** — `useReports`, `useInbox`, `useSync` поверх `useQuery` / `useMutation`; `useSyncSSE` — Server-Sent Events для статуса синхронизации в реальном времени.
-- **`pages/`** — `DashboardPage`, `InboxPage`, `ReportPage`, `SettingsPage`. Маршруты подключаются в `App.tsx`.
-- **`components/`** — подпапки по доменам: `inbox/`, `report/`, `sync/`, `layout/` (`AppLayout` — общий каркас страниц).
-- **`types/`** — `api.ts` с типами DTO, общими для нескольких модулей.
-- **`utils/`** — `formatDuration`, `taskTitle` и прочие чистые функции.
+- **`api/`** — `client.ts` is a thin wrapper over `fetch` (base URL, headers, error handling); `sync.ts`, `reports.ts`, `inbox.ts`, `settings.ts` — one file per backend resource.
+- **`hooks/`** — `useReports`, `useInbox`, `useSync` on top of `useQuery` / `useMutation`; `useSyncSSE` — Server-Sent Events for real-time sync status.
+- **`pages/`** — `DashboardPage`, `InboxPage`, `ReportPage`, `SettingsPage`. Routes are wired up in `App.tsx`.
+- **`components/`** — subfolders by domain: `inbox/`, `report/`, `sync/`, `layout/` (`AppLayout` — the shared page chrome).
+- **`types/`** — `api.ts` with DTO types shared across modules.
+- **`utils/`** — `formatDuration`, `taskTitle` and other pure functions.
 
-## Запуск
+## Running
 
-Установка и запуск выполняются через корневой `Makefile`, см. [../README.md](../README.md). Frontend поднимается контейнером `node` командой `make up` и слушает `http://localhost:5173`. Vite проксирует API-запросы на backend (`http://localhost:8000`).
+Install and run via the root `Makefile` — see [../README.md](../README.md). The frontend is brought up by `make up` in the `node` container and listens on `http://localhost:5173`. Vite proxies API requests to the backend (`http://localhost:8000`).
 
-Локальные команды (npm-скрипты в `package.json`) выполняются внутри контейнера `node`. Точные команды `docker compose exec node …` см. в корневом [AGENTS.md](../AGENTS.md).
+Local commands (the npm scripts in `package.json`) run inside the `node` container. See the root [../AGENTS.md](../AGENTS.md) for the exact `docker compose exec node …` commands.
 
-## Стиль кода
+## Code style
 
 - TypeScript strict mode (`tsconfig.app.json`).
-- ESLint — конфиг [`eslint.config.js`](eslint.config.js): `typescript-eslint`, `react-hooks`, `react-refresh`.
-- Prettier — общие настройки проекта.
-- Только функциональные компоненты и хуки, без классов.
-- `any` запрещён; неизвестные данные типизируем через `unknown` и сужаем.
+- ESLint — config [`eslint.config.js`](eslint.config.js): `typescript-eslint`, `react-hooks`, `react-refresh`.
+- Prettier — shared project settings.
+- Functional components and hooks only, no classes.
+- `any` is forbidden; unknown data is typed as `unknown` and narrowed.
 
-Проверки и автоисправление запускаются из корня для всего репозитория:
+Linting and auto-fix run from the repo root for the whole repo:
 
 ```bash
 make lint   # backend + frontend (Pint, PHPStan, ESLint, Prettier)
-make fix    # автоисправление (Pint + Prettier)
+make fix    # auto-fix (Pint + Prettier)
 ```
 
-Подробнее о правилах и архитектуре — [../AGENTS.md](../AGENTS.md).
+More on the rules and architecture — [../AGENTS.md](../AGENTS.md).
 
-## См. также
+## See also
 
-- [../AGENTS.md](../AGENTS.md) — главный документ: стек, команды, архитектура, правила code review.
-- [../README.md](../README.md) — пользовательская часть README.
-- [../CONTRIBUTING.md](../CONTRIBUTING.md) — процесс контрибьюции.
+- [../AGENTS.md](../AGENTS.md) — main document: stack, commands, architecture, code-review rules.
+- [../README.md](../README.md) — the user-facing README.
+- [../CONTRIBUTING.md](../CONTRIBUTING.md) — the contribution process.
