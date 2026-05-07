@@ -1,21 +1,21 @@
 # Backend — Report Generator
 
-Backend Laravel-приложения Report Generator. Бизнес-логика организована по DDD: `Domain/` (контексты) + `Infrastructure/` (адаптеры внешних сервисов).
+The Laravel backend of the Report Generator application. Business logic is organized along DDD lines: `Domain/` (bounded contexts) + `Infrastructure/` (external-service adapters).
 
-Полный разбор архитектуры — в корневом [AGENTS.md](../AGENTS.md). Установка и запуск окружения — в корневом [README.md](../README.md).
+A full architecture walkthrough lives in the root [AGENTS.md](../AGENTS.md). Setup and how to run the environment are in the root [README.md](../README.md).
 
-## Стек
+## Stack
 
-- PHP `^8.2`, расширение `ext-redis`
+- PHP `^8.2`, the `ext-redis` extension
 - Laravel `^12.0`, `laravel/tinker` `^2.10.1`
-- PHPWord `^1.4` (генерация `.docx`)
-- PHPUnit `^11.5.50` (тесты на in-memory SQLite)
+- PHPWord `^1.4` (`.docx` generation)
+- PHPUnit `^11.5.50` (tests on in-memory SQLite)
 - Larastan `^3.9` (PHPStan level 10), Laravel Pint `^1.29`
 - Mockery `^1.6`, FakerPHP `^1.23`, Collision `^8.6`, Pail `^1.2.2`, Sail `^1.41`
 
-Версии — из [composer.json](composer.json).
+Versions — from [composer.json](composer.json).
 
-## Структура `app/`
+## Layout of `app/`
 
 ```
 app/
@@ -27,43 +27,43 @@ app/
 └── Models/User.php
 ```
 
-**Контексты (`Domain/`):** `Bitrix24`, `GitLab`, `Inbox`, `Matching`, `Narrative`, `Report`, `Settings`, `Shared`, `Sync`. Подпапки внутри контекста создаются по необходимости — не каждый контекст содержит все девять.
+**Bounded contexts (`Domain/`):** `Bitrix24`, `GitLab`, `Inbox`, `Matching`, `Narrative`, `Report`, `Settings`, `Shared`, `Sync`. Subfolders inside a context are created as needed — not every context contains all nine.
 
-**Инфраструктура (`Infrastructure/`):**
+**Infrastructure (`Infrastructure/`):**
 
-- `Bitrix24/Bitrix24Client` — HTTP-клиент Битрикс24
-- `GitLab/GitLabClient` — HTTP-клиент GitLab
-- `LLM/{LlmManager, ClaudeProvider, OpenAiProvider}` — провайдеры LLM
-- `Report/{WordExporter, PromptExportService}` — экспорт `.docx` и выгрузка промптов
+- `Bitrix24/Bitrix24Client` — Bitrix24 HTTP client
+- `GitLab/GitLabClient` — GitLab HTTP client
+- `LLM/{LlmManager, ClaudeProvider, OpenAiProvider}` — LLM providers
+- `Report/{WordExporter, PromptExportService}` — `.docx` export and prompt dump
 
-`App\Models\User` намеренно остаётся в `app/Models/` (требование Laravel auth). Доменные модели живут в `Domain/<Context>/Models/`.
+`App\Models\User` intentionally stays in `app/Models/` (a Laravel auth requirement). Domain models live in `Domain/<Context>/Models/`.
 
-Подробное описание границ контекстов, потоков данных и принятых паттернов — в [AGENTS.md](../AGENTS.md).
+A detailed description of context boundaries, data flows and the patterns we follow lives in [AGENTS.md](../AGENTS.md).
 
-## Запуск
+## Running
 
-Установка, поднятие docker-окружения и фронтенда — через корневой [Makefile](../Makefile). См. корневой [README.md](../README.md).
+Installation, bringing up the docker environment and the frontend — through the root [Makefile](../Makefile). See the root [README.md](../README.md).
 
-Команды, специфичные для backend:
+Backend-specific commands:
 
-- `make migrate` — применить миграции
+- `make migrate` — apply migrations
 - `make test` — PHPUnit (in-memory SQLite)
 - `make lint` — Pint + PHPStan (level 10)
-- `make fix` — автоисправления Pint
-- Запуск конкретного теста: `docker exec moronocracy-backend php artisan test --filter=ИмяТеста`
+- `make fix` — Pint auto-fixes
+- Run a specific test: `docker exec moronocracy-backend php artisan test --filter=TestName`
 
-## Тестирование
+## Testing
 
-- `tests/Unit/Domain/<Context>/...` — зеркало DDD-структуры; покрывает Actions, Services, ValueObjects, Queries
-- `tests/Feature/...` — HTTP/интеграционные тесты контроллеров и джобов
-- In-memory SQLite (см. `phpunit.xml`)
-- `tests/Mocks/MockLlmProvider.php` — детерминированный мок LLM
-- `tests/Fixtures/` — фикстуры запросов/ответов внешних API
+- `tests/Unit/Domain/<Context>/...` — mirrors the DDD layout; covers Actions, Services, ValueObjects, Queries
+- `tests/Feature/...` — HTTP / integration tests for controllers and jobs
+- In-memory SQLite (see `phpunit.xml`)
+- `tests/Mocks/MockLlmProvider.php` — a deterministic LLM mock
+- `tests/Fixtures/` — request/response fixtures for external APIs
 
-Примеры тестов и принятые соглашения — в [AGENTS.md](../AGENTS.md).
+Test examples and accepted conventions — in [AGENTS.md](../AGENTS.md).
 
-## См. также
+## See also
 
-- [AGENTS.md](../AGENTS.md) — архитектура, контексты, паттерны, тестирование
-- [README.md](../README.md) — установка, запуск, команды Makefile
-- [CONTRIBUTING.md](../CONTRIBUTING.md) — процесс контрибьюшна
+- [AGENTS.md](../AGENTS.md) — architecture, contexts, patterns, testing
+- [README.md](../README.md) — install, run, Makefile commands
+- [CONTRIBUTING.md](../CONTRIBUTING.md) — the contribution process

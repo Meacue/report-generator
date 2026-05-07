@@ -1,68 +1,68 @@
 # Report Generator
 
-Веб-приложение для генерации отчётов разработчика. Синхронизирует коммиты из GitLab и задачи из Bitrix24, связывает их, генерирует нарративные описания через LLM (Claude / OpenAI) и экспортирует `.docx`.
+A web application for generating developer reports. It synchronizes commits from GitLab and tasks from Bitrix24, links them, generates narrative descriptions via an LLM (Claude / OpenAI) and exports `.docx`.
 
-## Команды
+## Commands
 
-Все команды запускаются из корня репозитория через `make`. Контейнеры должны быть запущены (`make up`) перед выполнением остальных команд.
+All commands are run from the repository root through `make`. The containers must be up (`make up`) before running anything else.
 
 ```bash
-make up          # запуск контейнеров (docker compose up -d)
-make down        # остановка контейнеров
-make build       # пересборка образов
-make migrate     # применить миграции (php artisan migrate)
-make test        # PHPUnit — все тесты (vendor/bin/phpunit)
-make lint        # все проверки: Pint, PHPStan, ESLint, Prettier
-make fix         # автоисправление: Pint + Prettier
-make shell       # sh-консоль внутри контейнера app
+make up          # start containers (docker compose up -d)
+make down        # stop containers
+make build       # rebuild images
+make migrate     # apply migrations (php artisan migrate)
+make test        # PHPUnit — all tests (vendor/bin/phpunit)
+make lint        # all checks: Pint, PHPStan, ESLint, Prettier
+make fix         # auto-fix: Pint + Prettier
+make shell       # sh shell inside the app container
 make logs        # docker compose logs -f
 ```
 
-Запуск отдельного теста из контейнера:
+Run a single test from inside the container:
 
 ```bash
-docker compose exec app sh -c "cd /var/www && vendor/bin/phpunit --filter=ИмяТеста"
+docker compose exec app sh -c "cd /var/www && vendor/bin/phpunit --filter=TestName"
 ```
 
-Запуск только PHPStan:
+Run only PHPStan:
 
 ```bash
 docker compose exec app sh -c "cd /var/www && vendor/bin/phpstan analyse --no-progress"
 ```
 
-Запуск только ESLint:
+Run only ESLint:
 
 ```bash
 docker compose exec node sh -c "cd /app && npx eslint src/"
 ```
 
-## Стек
+## Stack
 
-- **Backend:** PHP 8.2+ / Laravel 12, строгая типизация (`declare(strict_types=1)`)
+- **Backend:** PHP 8.2+ / Laravel 12, strict typing (`declare(strict_types=1)`)
 - **Frontend:** React 18.3 / TypeScript 5.6 / Vite 5.4, React Router 7, TanStack Query 5
-- **БД:** SQLite (файл `backend/database/database.sqlite`)
-- **Очереди:** Redis 7 + Laravel Queue (контейнер `worker`)
-- **Экспорт:** PHPWord для генерации `.docx`
-- **LLM:** Anthropic Claude API / OpenAI API (паттерн Strategy через `LlmProviderInterface`)
-- **Контейнеризация:** Docker Compose — 4 сервиса: `app` (:8000), `node` (:5173), `worker`, `redis` (:6379)
+- **Database:** SQLite (file at `backend/database/database.sqlite`)
+- **Queues:** Redis 7 + Laravel Queue (the `worker` container)
+- **Export:** PHPWord for `.docx` generation
+- **LLM:** Anthropic Claude API / OpenAI API (Strategy pattern via `LlmProviderInterface`)
+- **Containerization:** Docker Compose — 4 services: `app` (:8000), `node` (:5173), `worker`, `redis` (:6379)
 
-## Стиль кода
+## Code style
 
 ### Backend (PHP)
 
-Стиль определён в `backend/pint.json` (пресет PSR-12). Статический анализ — PHPStan level 10 с Larastan (`backend/phpstan.neon`). Ключевые правила:
+The style is defined in `backend/pint.json` (PSR-12 preset). Static analysis — PHPStan level 10 with Larastan (`backend/phpstan.neon`). Key rules:
 
-- `declare(strict_types=1)` в каждом PHP-файле
-- Типизированные параметры, возвраты и свойства — без `mixed`, без подавления ошибок через `@phpstan-ignore`
-- Архитектура — DDD: `backend/app/Domain/<Context>/` для бизнес-логики, `backend/app/Infrastructure/<Context>/` для адаптеров к внешним системам (см. раздел «Доменный и инфраструктурный слои»)
-- Use Cases оформляются как `final readonly` Action-классы с одним публичным методом `__invoke()` (см. `Domain/<Context>/Actions/`)
-- Внешние клиенты реализуют интерфейс из `Domain/<Context>/Services/` (например, `Bitrix24ClientInterface` → `Infrastructure/Bitrix24/Bitrix24Client`)
-- Enum-ы для всех перечислимых значений (см. `Domain/<Context>/Enums/`)
-- DTO через `readonly`-классы (см. `Domain/<Context>/DTOs/`)
-- Value Objects — в `Domain/<Context>/ValueObjects/` или `Domain/Shared/ValueObjects/`
-- Провайдеры регистрируют биндинги интерфейс → реализация
+- `declare(strict_types=1)` in every PHP file
+- Typed parameters, returns, and properties — no `mixed`, no error suppression via `@phpstan-ignore`
+- Architecture — DDD: `backend/app/Domain/<Context>/` for business logic, `backend/app/Infrastructure/<Context>/` for adapters to external systems (see "Domain and Infrastructure layers")
+- Use Cases are `final readonly` Action classes with a single public `__invoke()` method (see `Domain/<Context>/Actions/`)
+- External clients implement an interface from `Domain/<Context>/Services/` (e.g., `Bitrix24ClientInterface` → `Infrastructure/Bitrix24/Bitrix24Client`)
+- Enums for every enumerable value (see `Domain/<Context>/Enums/`)
+- DTOs are `readonly` classes (see `Domain/<Context>/DTOs/`)
+- Value Objects live in `Domain/<Context>/ValueObjects/` or `Domain/Shared/ValueObjects/`
+- Service providers register interface → implementation bindings
 
-Пример Action-класса:
+Action class example:
 
 ```php
 <?php
@@ -93,7 +93,7 @@ final readonly class MatchBranch
 }
 ```
 
-Пример инфраструктурного клиента:
+Infrastructure client example:
 
 ```php
 <?php
@@ -112,23 +112,23 @@ final class Bitrix24Client implements Bitrix24ClientInterface
 
 ### Frontend (TypeScript)
 
-ESLint-конфиг — `frontend/eslint.config.js`. Правила:
+ESLint config — `frontend/eslint.config.js`. Rules:
 
-- TypeScript strict mode, нет `any`
-- Функциональные компоненты с хуками, без классов
-- API-клиенты — в `frontend/src/api/`, каждый модуль по домену (`sync`, `reports`, `inbox`, `settings`)
-- Хуки — в `frontend/src/hooks/`, оборачивают TanStack Query (`useQuery` / `useMutation`)
-- Типы API — в `frontend/src/types/api.ts`
+- TypeScript strict mode, no `any`
+- Functional components with hooks, no classes
+- API clients live in `frontend/src/api/`, one module per domain (`sync`, `reports`, `inbox`, `settings`)
+- Hooks live in `frontend/src/hooks/`, wrapping TanStack Query (`useQuery` / `useMutation`)
+- API types — in `frontend/src/types/api.ts`
 
-## Тестирование
+## Testing
 
-Backend-тесты расположены в `backend/tests/`. Тесты используют in-memory SQLite (`DB_DATABASE=:memory:`). Фикстуры JSON для моков внешних API — в `backend/tests/Fixtures/`. Мок LLM-провайдера — `backend/tests/Mocks/MockLlmProvider.php`.
+Backend tests live in `backend/tests/`. Tests use in-memory SQLite (`DB_DATABASE=:memory:`). JSON fixtures for external-API mocks — in `backend/tests/Fixtures/`. The LLM provider mock — `backend/tests/Mocks/MockLlmProvider.php`.
 
-При добавлении нового функционала — писать и unit-, и feature-тесты. Моки внешних сервисов (GitLab, Bitrix24, LLM) обязательны: тесты не должны делать реальных HTTP-запросов.
+When adding new functionality, write both unit and feature tests. Mocks for external services (GitLab, Bitrix24, LLM) are mandatory: tests must not make real HTTP requests.
 
-Раскладка тестов отражает DDD-структуру: `tests/Unit/Domain/<Context>/Actions/`, `tests/Unit/Domain/<Context>/Models/`, `tests/Unit/Domain/<Context>/Queries/`, `tests/Unit/Domain/<Context>/ValueObjects/`. Feature-тесты — в `tests/Feature/<Area>/`.
+The test layout mirrors the DDD structure: `tests/Unit/Domain/<Context>/Actions/`, `tests/Unit/Domain/<Context>/Models/`, `tests/Unit/Domain/<Context>/Queries/`, `tests/Unit/Domain/<Context>/ValueObjects/`. Feature tests live in `tests/Feature/<Area>/`.
 
-Паттерн feature-теста:
+Feature test pattern:
 
 ```php
 <?php
@@ -150,84 +150,84 @@ final class GenerateNarrativesForReportTest extends TestCase
 
     public function test_generates_narratives_for_report(): void
     {
-        // GIVEN: мок LLM-провайдера и отчёт со связанными задачами
+        // GIVEN: an LLM-provider mock and a report with linked tasks
         $this->app->bind(LlmProviderInterface::class, MockLlmProvider::class);
         $report = Report::factory()->withTasks(3)->create();
 
-        // WHEN: запускаем генерацию нарративов через Action
+        // WHEN: we run narrative generation through the Action
         $action = $this->app->make(GenerateNarrativesForReport::class);
         $action($report);
 
-        // THEN: нарративы записаны в историю
+        // THEN: narratives are recorded in the history
         $this->assertDatabaseCount('narrative_history', 3);
     }
 }
 ```
 
-Ключевые правила: структура GIVEN-WHEN-THEN в комментариях, `final class`, мок внешних сервисов через контейнер (LLM — через `MockLlmProvider`), фабрики для тестовых данных, фикстуры JSON для ответов внешних API — в `backend/tests/Fixtures/`.
+Key rules: GIVEN-WHEN-THEN structure in comments, `final class`, mock external services through the container (LLM via `MockLlmProvider`), factories for test data, JSON fixtures for external-API responses in `backend/tests/Fixtures/`.
 
-Перед коммитом убедись, что проходят все проверки:
+Before committing, make sure all checks pass:
 
 ```bash
 make lint && make test
 ```
 
-## Git-воркфлоу
+## Git workflow
 
-- Формат коммитов: [Conventional Commits](https://www.conventionalcommits.org/) — `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
-- Одна логическая задача — один PR
-- Перед PR: `make lint && make test` без ошибок
-- Код и комментарии — на английском языке
+- Commit format: [Conventional Commits](https://www.conventionalcommits.org/) — `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
+- One logical task per PR
+- Before opening a PR: `make lint && make test` with no errors
+- Code and comments — in English
 
-## Архитектурные решения
+## Architecture decisions
 
-### Data Flow
+### Data flow
 
-Основной поток данных при генерации отчёта:
+Main data flow during report generation:
 
-1. **Синхронизация** — `RunSyncJob` (очередь Redis) выполняет actions `Domain/Sync/Actions/SyncGitLab` и `SyncBitrix24` (с подэтапами `SyncBitrix24Tasks`, `SyncBitrix24TimeEntries`), которые через клиенты `Infrastructure/GitLab/GitLabClient` и `Infrastructure/Bitrix24/Bitrix24Client` забирают данные и сохраняют в SQLite. По завершении — событие `SyncCompleted`.
-2. **Сопоставление** — слушатель `MatchBranchesOnSyncCompleted` запускает actions `Domain/Matching/Actions/MatchBranch` (по одному) или `MatchAllUnmatched` (массово). Имя ветки парсится `Domain/GitLab/Services/BranchParser`, по номеру задачи находится `Bitrix24\Models\Task`, уровень уверенности — enum `ConfidenceLevel`. Несопоставленные коммиты попадают в Inbox (`Domain/Inbox/Queries/GetUnlinkedBranches`).
-3. **Сборка отчёта** — action `Domain/Report/Actions/GenerateReport` компонует данные (задачи + коммиты + временные записи) в структуру отчёта и эмитит событие `ReportGenerated`.
-4. **Нарратив** — слушатель `GenerateNarrativesOnReportGenerated` запускает action `Domain/Narrative/Actions/GenerateNarrativesForReport`, который через `LlmProviderInterface` (реализации в `Infrastructure/LLM/` — `LlmManager` выбирает `ClaudeProvider` / `OpenAiProvider`) получает человекочитаемые описания. Поддерживается ручное редактирование (`EditDayNarrative`, `EditTaskNarrative`) и регенерация (`Regenerate*Narrative`) с записью в `NarrativeHistory`.
-5. **Экспорт** — `Infrastructure/Report/WordExporter` (реализация `Domain/Report/Services/ReportExporterInterface`, PHPWord) генерирует финальный `.docx`-файл. Пустые дни обрабатываются методом `addEmptyDayCell()`, источник дня помечается enum `ReportDaySource`.
+1. **Synchronization** — `RunSyncJob` (Redis queue) runs the `Domain/Sync/Actions/SyncGitLab` and `SyncBitrix24` actions (with sub-steps `SyncBitrix24Tasks`, `SyncBitrix24TimeEntries`), which fetch data through the `Infrastructure/GitLab/GitLabClient` and `Infrastructure/Bitrix24/Bitrix24Client` clients and store it in SQLite. When done, the `SyncCompleted` event fires.
+2. **Matching** — the `MatchBranchesOnSyncCompleted` listener runs the `Domain/Matching/Actions/MatchBranch` (one branch at a time) or `MatchAllUnmatched` (in bulk) actions. The branch name is parsed by `Domain/GitLab/Services/BranchParser`, the matching `Bitrix24\Models\Task` is found by task number, and confidence is the `ConfidenceLevel` enum. Unmatched commits land in the Inbox (`Domain/Inbox/Queries/GetUnlinkedBranches`).
+3. **Report assembly** — the `Domain/Report/Actions/GenerateReport` action assembles data (tasks + commits + time entries) into the report structure and emits the `ReportGenerated` event.
+4. **Narrative** — the `GenerateNarrativesOnReportGenerated` listener runs the `Domain/Narrative/Actions/GenerateNarrativesForReport` action, which goes through `LlmProviderInterface` (implementations in `Infrastructure/LLM/` — `LlmManager` selects `ClaudeProvider` / `OpenAiProvider`) to obtain human-readable descriptions. Manual editing (`EditDayNarrative`, `EditTaskNarrative`) and regeneration (`Regenerate*Narrative`) are supported, with entries written to `NarrativeHistory`.
+5. **Export** — `Infrastructure/Report/WordExporter` (an implementation of `Domain/Report/Services/ReportExporterInterface`, using PHPWord) generates the final `.docx` file. Empty days are handled by `addEmptyDayCell()`; the day source is marked with the `ReportDaySource` enum.
 
-Пользователь управляет процессом через React-фронтенд: запускает синхронизацию, проверяет сопоставления в Inbox, корректирует связи, генерирует и скачивает отчёт.
+The user drives the process via the React frontend: triggers synchronization, reviews matches in the Inbox, fixes links, and then generates and downloads the report.
 
-### Доменный и инфраструктурный слои
+### Domain and Infrastructure layers
 
-Backend организован по DDD-принципу: бизнес-логика — в `backend/app/Domain/<Context>/`, адаптеры к внешним системам — в `backend/app/Infrastructure/<Context>/`.
+The backend is organized along DDD lines: business logic — in `backend/app/Domain/<Context>/`, adapters to external systems — in `backend/app/Infrastructure/<Context>/`.
 
-**`backend/app/Domain/`** — 9 ограниченных контекстов, у каждого своя структура (`Actions/`, `DTOs/`, `Enums/`, `Events/`, `Listeners/`, `Models/`, `Queries/`, `Services/` (контракты), `ValueObjects/` — выборочно):
+**`backend/app/Domain/`** — 9 bounded contexts, each with its own structure (`Actions/`, `DTOs/`, `Enums/`, `Events/`, `Listeners/`, `Models/`, `Queries/`, `Services/` (contracts), `ValueObjects/` — selectively):
 
-- `GitLab/` — модели `Branch`, `Commit`; парсеры `BranchParser`, `ConventionalCommitParser`; контракт `GitLabClientInterface`; DTO `ParsedBranch`
-- `Bitrix24/` — модели `Task`, `TimeEntry`; контракт `Bitrix24ClientInterface`; enum-ы `TaskStatus`, `ParticipationRole`
-- `Matching/` — actions `MatchBranch`, `MatchAllUnmatched`, `RematchBranch`; модель `MatchResult`; enum `ConfidenceLevel`; событие `BranchMatched` + слушатель `MatchBranchesOnSyncCompleted`
-- `Narrative/` — actions `GenerateNarrativesForReport`, `EditDay/TaskNarrative`, `RegenerateDay/TaskNarrative`, `UndoDay/TaskNarrative`; модель `NarrativeHistory`; контракт `LlmProviderInterface`; служебный `NarrativeSupport`
-- `Report/` — action `GenerateReport`; модели `Report`, `ReportDay`, `ReportTask`, `ReportDayTask`; queries `GetReportPreview`, `GetMonthlyReportData`, `GetTaskTimeBreakdown` и др.; контракты `ReportExporterInterface`, `PromptExportServiceInterface`; enum-ы `ReportType`, `ReportStatus`, `ReportDaySource`; ValueObject `Narrative`
-- `Sync/` — actions `SyncGitLab`, `SyncBitrix24` (+ `SyncBitrix24Tasks`, `SyncBitrix24TimeEntries`, `SyncBitrix24ForReport`, `EnsureTasksForPeriod`); модели `SyncJob`, `SyncLog`; событие `SyncCompleted`
+- `GitLab/` — models `Branch`, `Commit`; parsers `BranchParser`, `ConventionalCommitParser`; contract `GitLabClientInterface`; DTO `ParsedBranch`
+- `Bitrix24/` — models `Task`, `TimeEntry`; contract `Bitrix24ClientInterface`; enums `TaskStatus`, `ParticipationRole`
+- `Matching/` — actions `MatchBranch`, `MatchAllUnmatched`, `RematchBranch`; model `MatchResult`; enum `ConfidenceLevel`; event `BranchMatched` + listener `MatchBranchesOnSyncCompleted`
+- `Narrative/` — actions `GenerateNarrativesForReport`, `EditDay/TaskNarrative`, `RegenerateDay/TaskNarrative`, `UndoDay/TaskNarrative`; model `NarrativeHistory`; contract `LlmProviderInterface`; helper `NarrativeSupport`
+- `Report/` — action `GenerateReport`; models `Report`, `ReportDay`, `ReportTask`, `ReportDayTask`; queries `GetReportPreview`, `GetMonthlyReportData`, `GetTaskTimeBreakdown` and others; contracts `ReportExporterInterface`, `PromptExportServiceInterface`; enums `ReportType`, `ReportStatus`, `ReportDaySource`; ValueObject `Narrative`
+- `Sync/` — actions `SyncGitLab`, `SyncBitrix24` (+ `SyncBitrix24Tasks`, `SyncBitrix24TimeEntries`, `SyncBitrix24ForReport`, `EnsureTasksForPeriod`); models `SyncJob`, `SyncLog`; event `SyncCompleted`
 - `Inbox/` — actions `AssignBranch`, `BulkAssignBranches`, `CreateTaskAndAssign`, `IgnoreBranch`; query `GetUnlinkedBranches`
-- `Settings/` — модель `Setting`
-- `Shared/` — переиспользуемые ValueObjects `DateRange`, `TaskNumber`
+- `Settings/` — model `Setting`
+- `Shared/` — reusable ValueObjects `DateRange`, `TaskNumber`
 
-**`backend/app/Infrastructure/`** — реализации контрактов из доменов и адаптеры к внешним API:
+**`backend/app/Infrastructure/`** — implementations of domain contracts and adapters to external APIs:
 
-- `Bitrix24/Bitrix24Client.php` — реализация `Domain\Bitrix24\Services\Bitrix24ClientInterface`
-- `GitLab/GitLabClient.php` — реализация `Domain\GitLab\Services\GitLabClientInterface`
-- `LLM/` — `LlmManager` (диспетчер провайдеров), `ClaudeProvider`, `OpenAiProvider` (все реализуют `Domain\Narrative\Services\LlmProviderInterface`)
-- `Report/` — `WordExporter`, `PromptExportService` (реализации одноимённых интерфейсов из `Domain/Report/Services/`)
+- `Bitrix24/Bitrix24Client.php` — implementation of `Domain\Bitrix24\Services\Bitrix24ClientInterface`
+- `GitLab/GitLabClient.php` — implementation of `Domain\GitLab\Services\GitLabClientInterface`
+- `LLM/` — `LlmManager` (provider dispatcher), `ClaudeProvider`, `OpenAiProvider` (all implement `Domain\Narrative\Services\LlmProviderInterface`)
+- `Report/` — `WordExporter`, `PromptExportService` (implementations of the same-named interfaces from `Domain/Report/Services/`)
 
-**`backend/app/Models/`** — только `User.php`. Все доменные модели лежат в `Domain/<Context>/Models/`.
+**`backend/app/Models/`** — only `User.php`. All domain models live in `Domain/<Context>/Models/`.
 
-**`backend/app/Http/Controllers/`** — тонкий слой (`InboxController`, `ReportController`, `SettingsController`, `SyncController`): принять запрос → вызвать Action/Query → вернуть API Resource.
+**`backend/app/Http/Controllers/`** — a thin layer (`InboxController`, `ReportController`, `SettingsController`, `SyncController`): accept the request → invoke an Action / Query → return an API Resource.
 
-Фоновая синхронизация выполняется через `App\Jobs\RunSyncJob` (Laravel Queue, Redis).
+Background synchronization runs through `App\Jobs\RunSyncJob` (Laravel Queue, Redis).
 
-## Границы
+## Boundaries
 
-- Никогда не коммить секреты, токены и API-ключи. Все секреты — только через `.env`-файлы, которые в `.gitignore`
-- Не модифицировать файлы в `backend/vendor/` и `frontend/node_modules/`
-- Не менять конфигурацию PHPStan level и Pint-пресет без явного согласования
-- Не отключать и не ослаблять правила ESLint / TypeScript strict
-- Не добавлять зависимости без обоснования — минимум внешних пакетов
-- Не делать реальных HTTP-вызовов в тестах — только моки
-- Не удалять и не игнорировать падающие тесты — чинить
+- Never commit secrets, tokens or API keys. All secrets — only via `.env` files, which are in `.gitignore`
+- Do not modify files under `backend/vendor/` or `frontend/node_modules/`
+- Do not change the PHPStan level or the Pint preset without explicit agreement
+- Do not disable or weaken ESLint / TypeScript strict rules
+- Do not add dependencies without a reason — keep external packages to a minimum
+- Do not make real HTTP calls in tests — use mocks only
+- Do not delete or skip failing tests — fix them

@@ -1,42 +1,42 @@
 # Report Generator
-Я разработчик, а не писатель отчетов, мне не охота тратить время на написание отчета, зато я рад заниматься программированием. Так и появился этот проект.
+I'm a developer, not a report writer — I'd rather not spend time writing reports, but I'm happy to spend it programming. That's how this project was born.
 
-Веб-приложение для автоматической генерации отчётов разработчика. Синхронизирует данные из GitLab и Bitrix24, связывает коммиты из MR с задачами из bitrix, генерирует нарративные описания проделанной работы на основе комитов, на русском языке с помощью LLM и экспортирует результат в `.docx`.
+A web application for automatic generation of developer reports. It synchronizes data from GitLab and Bitrix24, links MR commits to Bitrix tasks, generates narrative descriptions of the work done — based on commits, in Russian, via an LLM — and exports the result to `.docx`.
 
-## Возможности
+## Features
 
-- **Синхронизация данных** — автоматический импорт коммитов из GitLab и задач из Bitrix24
-- **Сопоставление** — связывание коммитов с задачами по веткам и паттернам именования (в названии ветки необходимо прописывать id задачи из bitrix, по ним и происходит match bitrix->gitlab)
-- **Генерация нарративов** — LLM (Claude или OpenAI) создаёт описания выполненной работы на русском языке в деловом стиле на основе комитов. Стиль и другие детали оформления можно задать с помощью системного промпта, редактируемого на странице настроек
-- **Экспорт в Word** — готовый `.docx`-отчёт за выбранный период
-- **Веб-интерфейс** — React SPA для управления отчётами и настройками
+- **Data synchronization** — automatic import of commits from GitLab and tasks from Bitrix24
+- **Matching** — links commits to tasks by branches and naming patterns (the branch name must contain the Bitrix task ID; that's how the Bitrix → GitLab match is performed)
+- **Narrative generation** — an LLM (Claude or OpenAI) produces business-style descriptions of the work performed in Russian, based on commits. The style and other formatting details can be configured via a system prompt editable on the settings page.
+- **Word export** — a ready-to-use `.docx` report for the selected period
+- **Web interface** — a React SPA for managing reports and settings
 
-## Требования
+## Requirements
 
-- Docker и Docker Compose
-- Токен GitLab (Personal Access Token с правами `read_api`)
-- Вебхук Bitrix24 (REST API)
-- API-ключ LLM-провайдера (Anthropic Claude или OpenAI)
+- Docker and Docker Compose
+- A GitLab token (Personal Access Token with `read_api` scope)
+- A Bitrix24 webhook (REST API)
+- An LLM provider API key (Anthropic Claude or OpenAI)
 
-## Быстрый старт
+## Quick start
 
-1. **Клонируйте репозиторий:**
+1. **Clone the repository:**
 
 ```bash
 git clone https://github.com/your-username/report-generator.git
 cd report-generator
 ```
 
-2. **Скопируйте файлы окружения и заполните секреты:**
+2. **Copy the environment files and fill in the secrets:**
 
 ```bash
 cp .env.example .env
 cp backend/.env.example backend/.env
 ```
 
-Отредактируйте `backend/.env` — укажите токены GitLab, Bitrix24 и LLM-провайдера (см. раздел «Конфигурация»).
+Edit `backend/.env` — provide GitLab, Bitrix24 and LLM provider tokens (see the "Configuration" section).
 
-3. **Запустите проект:**
+3. **Start the project:**
 
 ```bash
 make build
@@ -44,71 +44,71 @@ make up
 make migrate
 ```
 
-4. **Откройте в браузере:**
+4. **Open in your browser:**
 
 - Frontend: [http://localhost:5173](http://localhost:5173)
 - Backend API: [http://localhost:8000](http://localhost:8000)
 
-## Конфигурация
+## Configuration
 
-Все настройки задаются через переменные окружения в `backend/.env`:
+All settings are provided via environment variables in `backend/.env`:
 
 ### GitLab
 
-| Переменная | Описание |
+| Variable | Description |
 |---|---|
-| `GITLAB_URL` | URL вашего GitLab-инстанса (по умолчанию `https://gitlab.com`) |
-| `GITLAB_TOKEN` | Personal Access Token с правами `read_api` |
-| `GITLAB_USERNAME` | Ваш username в GitLab |
+| `GITLAB_URL` | URL of your GitLab instance (default `https://gitlab.com`) |
+| `GITLAB_TOKEN` | Personal Access Token with `read_api` scope |
+| `GITLAB_USERNAME` | Your GitLab username |
 
 ### Bitrix24
 
-| Переменная | Описание |
+| Variable | Description |
 |---|---|
-| `BITRIX24_URL` | URL REST API вашего Bitrix24 (например `https://company.bitrix24.ru/rest/ID/`) |
-| `BITRIX24_USER_ID` | ID пользователя в Bitrix24 |
-| `BITRIX24_API_KEY` | Ключ вебхука Bitrix24 |
+| `BITRIX24_URL` | URL of your Bitrix24 REST API (e.g. `https://company.bitrix24.ru/rest/ID/`) |
+| `BITRIX24_USER_ID` | User ID in Bitrix24 |
+| `BITRIX24_API_KEY` | Bitrix24 webhook key |
 
 ### LLM
 
-| Переменная | Описание |
+| Variable | Description |
 |---|---|
-| `LLM_PROVIDER` | Провайдер: `claude` или `openai` (по умолчанию `claude`) |
-| `LLM_API_KEY` | API-ключ выбранного провайдера |
-| `LLM_CLAUDE_MODEL` | Модель Claude (по умолчанию `claude-sonnet-4-20250514`) |
-| `LLM_OPENAI_MODEL` | Модель OpenAI (по умолчанию `gpt-4o-mini`) |
-| `LLM_MAX_TOKENS` | Максимум токенов в ответе (по умолчанию `1024`) |
+| `LLM_PROVIDER` | Provider: `claude` or `openai` (default `claude`) |
+| `LLM_API_KEY` | API key for the selected provider |
+| `LLM_CLAUDE_MODEL` | Claude model (default `claude-sonnet-4-20250514`) |
+| `LLM_OPENAI_MODEL` | OpenAI model (default `gpt-4o-mini`) |
+| `LLM_MAX_TOKENS` | Maximum tokens in the response (default `1024`) |
 
-## Основные команды
+## Common commands
 
 ```bash
-make up          # Запустить контейнеры
-make down        # Остановить контейнеры
-make build       # Пересобрать образы
-make migrate     # Применить миграции
-make test        # Запустить тесты (PHPUnit)
-make lint        # Проверить код (Pint, PHPStan, ESLint, Prettier)
-make fix         # Автоисправление форматирования
-make shell       # Консоль внутри контейнера app
-make logs        # Логи контейнеров
+make up          # Start containers
+make down        # Stop containers
+make build       # Rebuild images
+make migrate     # Apply migrations
+make test        # Run tests (PHPUnit)
+make lint        # Lint the code (Pint, PHPStan, ESLint, Prettier)
+make fix         # Auto-format
+make shell       # Shell inside the app container
+make logs        # Container logs
 ```
 
-## Стек технологий
+## Technology stack
 
 - **Backend:** PHP 8.2+ / Laravel 12 (DDD: `app/Domain/` + `app/Infrastructure/`)
 - **Frontend:** React 18 (TypeScript) / Vite
-- **БД:** SQLite
-- **Очереди:** Redis + Laravel Queue
-- **Генерация Word:** PHPWord
+- **Database:** SQLite
+- **Queues:** Redis + Laravel Queue
+- **Word generation:** PHPWord
 - **LLM:** Anthropic Claude API / OpenAI API
-- **Контейнеризация:** Docker Compose
+- **Containerization:** Docker Compose
 
-Подробнее о структуре кода — в [AGENTS.md](AGENTS.md) (раздел «Доменный и инфраструктурный слои»). Backend-специфика — в [backend/README.md](backend/README.md), frontend-специфика — в [frontend/README.md](frontend/README.md).
+For more on the code structure, see [AGENTS.md](AGENTS.md) (the "Domain and Infrastructure layers" section). Backend specifics live in [backend/README.md](backend/README.md), frontend specifics in [frontend/README.md](frontend/README.md).
 
-## Участие в разработке
+## Contributing
 
-Буду рад обратной связи и особенно вкладу в разработку проекта. Ознакомьтесь с [CONTRIBUTING.md](CONTRIBUTING.md) перед отправкой pull request.
+Feedback and contributions are very welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before sending a pull request.
 
-## Лицензия
+## License
 
-Проект распространяется под лицензией [MIT](LICENSE).
+The project is distributed under the [MIT](LICENSE) license.
