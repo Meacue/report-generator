@@ -2,7 +2,7 @@
   "name": "report-generator-tooling",
   "private": true,
   "version": "0.0.0",
-  "description": "Repository-level dev tooling (lefthook git hooks + commitlint). Не путать с frontend/package.json — это отдельная зона ответственности.",
+  "description": "Repository-level dev tooling (lefthook git hooks + commitlint). Not to be confused with frontend/package.json — that's a separate concern.",
   "scripts": {
     "prepare": "lefthook install",
     "commitlint": "commitlint --edit"

@@ -1,37 +1,37 @@
 name: 🐛 Bug Report
-description: Сообщить о баге
+description: Report a bug
 title: "fix: "
 labels: ["bug"]
 body:
   - type: textarea
     id: what-happened
     attributes:
-      label: Что произошло
-      description: Опишите наблюдаемое поведение.
+      label: What happened
+      description: Describe the observed behavior.
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: Что ожидалось
-      description: Какое поведение вы ожидали увидеть.
+      label: What you expected
+      description: The behavior you expected to see.
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Шаги для воспроизведения
-      description: Пошаговая инструкция.
+      label: Steps to reproduce
+      description: A step-by-step recipe.
       placeholder: |
-        1. Открыть страницу /reports
-        2. Нажать «Сгенерировать»
+        1. Open the /reports page
+        2. Click "Generate"
         3. ...
     validations:
       required: true
   - type: textarea
     id: environment
     attributes:
-      label: Окружение
+      label: Environment
       placeholder: |
         OS:           Windows 11
         PHP:          8.2.12
@@ -42,8 +42,8 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Логи / скриншоты
-      description: Если есть.
+      label: Logs / screenshots
+      description: If available.
       render: shell
     validations:
       required: false
