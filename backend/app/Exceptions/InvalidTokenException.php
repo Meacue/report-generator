@@ -14,7 +14,7 @@ final class InvalidTokenException extends RuntimeException
         ?Throwable $previous = null,
     ) {
         parent::__construct(
-            "Токен {$service} невалиден или истёк. Обновите его в настройках.",
+            "{$service} token is invalid or expired. Update it in settings.",
             401,
             $previous,
         );

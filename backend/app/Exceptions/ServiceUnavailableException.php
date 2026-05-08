@@ -15,7 +15,7 @@ final class ServiceUnavailableException extends RuntimeException
         ?Throwable $previous = null,
     ) {
         parent::__construct(
-            $message !== '' ? $message : "Не удалось подключиться к {$service}. Проверьте доступность и попробуйте позже.",
+            $message !== '' ? $message : "Failed to connect to {$service}. Check availability and try again later.",
             503,
             $previous,
         );
