@@ -1,37 +1,37 @@
 name: ✨ Feature Request
-description: Предложить новую функциональность
+description: Propose new functionality
 title: "feat: "
 labels: ["enhancement"]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Какую проблему решает
-      description: Опишите проблему, которую решит фича. Без описания проблемы — фича не нужна.
+      label: Problem this solves
+      description: Describe the problem the feature would solve. Without a problem statement the feature isn't justified.
     validations:
       required: true
   - type: textarea
     id: solution
     attributes:
-      label: Предлагаемое решение
-      description: Как вы видите реализацию. Можно высокоуровнево.
+      label: Proposed solution
+      description: How you see the implementation. High-level is fine.
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Альтернативы
-      description: Какие ещё варианты рассматривались и почему отвергнуты.
+      label: Alternatives
+      description: Other options considered and why they were rejected.
     validations:
       required: false
   - type: textarea
     id: acceptance
     attributes:
-      label: Критерии приёмки
-      description: Как мы поймём, что фича готова.
+      label: Acceptance criteria
+      description: How we'll know the feature is done.
       placeholder: |
-        - [ ] Endpoint /api/foo возвращает 200 на валидный запрос
-        - [ ] Покрыт unit-тестом
-        - [ ] Описан в README/AGENTS
+        - [ ] Endpoint /api/foo returns 200 for a valid request
+        - [ ] Covered by a unit test
+        - [ ] Documented in README/AGENTS
     validations:
       required: false

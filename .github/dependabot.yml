@@ -1,8 +1,8 @@
 # Dependabot version updates.
-# Документация: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 #
-# Все коммиты идут с префиксом "deps:" — он есть в нашем commitlint enum
-# и маппится в секцию "Changed" CHANGELOG.md (см. release-please-config.json).
+# All commits use the "deps:" prefix — it is in our commitlint enum
+# and maps to the "Changed" CHANGELOG.md section (see release-please-config.json).
 version: 2
 
 updates:
@@ -58,7 +58,7 @@ updates:
     commit-message:
       prefix: "deps"
     groups:
-      # React stack — major bumps идут бандлом (peer-dependencies должны двигаться вместе).
+      # React stack — major bumps move as a bundle (peer dependencies must travel together).
       react:
         patterns:
           - "react"

@@ -1,31 +1,31 @@
 <!--
-Заголовок PR должен быть в формате Conventional Commits, например:
+The PR title must follow Conventional Commits, for example:
   feat(bitrix): sanitize PII in comment payload
   fix(report): correct LLM token counter for Russian text
   chore(deps): bump phpoffice/phpword to 1.4.1
 
-Это становится сообщением единственного коммита после squash-merge,
-что напрямую влияет на CHANGELOG.md и SemVer-bump.
+It becomes the message of the single commit produced by squash-merge,
+which directly drives CHANGELOG.md and the SemVer bump.
 -->
 
-## Что меняется
+## What changes
 
-<!-- Кратко: что сделано в этом PR. Один логический change. -->
+<!-- Briefly: what this PR does. One logical change. -->
 
-## Зачем
+## Why
 
-<!-- Какую проблему решает. Ссылка на issue. -->
+<!-- The problem this solves. Link to the issue. -->
 
 Closes #
 
-## Как проверить
+## How to verify
 
-<!-- Шаги для ручной проверки или ссылка на тесты. -->
+<!-- Manual verification steps or a link to tests. -->
 
-## Чеклист
+## Checklist
 
-- [ ] Имя ветки соответствует Conventional Branch (`<type>/<slug>` или `<type>/<issue#>-<slug>`)
-- [ ] Заголовок PR — в формате Conventional Commits
-- [ ] `make lint` и `make test` проходят локально
-- [ ] Документация обновлена (если затрагивает поведение, видимое пользователю)
-- [ ] Один логический change в PR (не смешано несколько задач)
+- [ ] Branch name follows Conventional Branch (`<type>/<slug>` or `<type>/<issue#>-<slug>`)
+- [ ] PR title follows Conventional Commits
+- [ ] `make lint` and `make test` pass locally
+- [ ] Documentation updated (if user-visible behavior is affected)
+- [ ] One logical change in the PR (multiple tasks not mixed)

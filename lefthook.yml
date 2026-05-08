@@ -1,13 +1,13 @@
 # Lefthook — Git hooks manager.
-# Документация: https://lefthook.dev/
+# Documentation: https://lefthook.dev/
 #
-# Установка хуков (один раз после клона репозитория):
+# Install hooks (once, after cloning the repository):
 #   npx lefthook install
 #
-# Хуки проверяют:
-#   commit-msg → формат сообщения коммита (Conventional Commits)
-#   pre-commit → имя ветки (Conventional Branch) + линтеры на staged-файлах
-#   pre-push   → быстрые тесты (опционально)
+# What the hooks check:
+#   commit-msg → commit message format (Conventional Commits)
+#   pre-commit → branch name (Conventional Branch) + linters on staged files
+#   pre-push   → fast tests (optional)
 
 commit-msg:
   commands:
@@ -18,7 +18,7 @@ pre-commit:
   parallel: true
   commands:
     branch-name:
-      # Conventional Branch — допустимые формы:
+      # Conventional Branch — accepted forms:
       #   <type>/<slug>                  feat/conventional-branches
       #   <type>/<issue#>                feat/4
       #   <type>/#<issue#>               feat/#4
@@ -26,35 +26,35 @@ pre-commit:
       #   <type>/#<issue#>-<slug>        feat/#9-conventional-branches
       #   release/<MAJOR>.<MINOR>.<PATCH>     release/0.2.0
       #
-      # Slug опционален (можно ограничиться номером issue).
-      # Префикс '#' перед номером — опционален (для совместимости с GitHub-стилем).
-      # master/main/HEAD игнорируются — на них не коммитят напрямую.
+      # The slug is optional (the issue number alone is fine).
+      # The '#' prefix before the number is optional (matches GitHub's style).
+      # master/main/HEAD are skipped — direct commits aren't expected on them.
       run: |
         BRANCH=$(git rev-parse --abbrev-ref HEAD)
         if [ "$BRANCH" = "master" ] || [ "$BRANCH" = "main" ] || [ "$BRANCH" = "HEAD" ]; then
           exit 0
         fi
-        # Release-ветки: версии с точками (release/X.Y.Z или release/X.Y.Z-rc1).
+        # Release branches: dotted versions (release/X.Y.Z or release/X.Y.Z-rc1).
         if echo "$BRANCH" | grep -qE '^release/[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+)?$'; then
           exit 0
         fi
-        # Все остальные типы: <type>/[#]<slug-or-issue>
+        # All other types: <type>/[#]<slug-or-issue>
         if echo "$BRANCH" | grep -qE '^(feat|fix|hotfix|chore|docs|refactor|perf|test|ci|build|style|security|deps)/#?[a-z0-9]+(-[a-z0-9]+)*$'; then
           exit 0
         fi
         echo ""
-        echo "✗ Имя ветки '$BRANCH' не соответствует Conventional Branch."
+        echo "✗ Branch name '$BRANCH' does not match Conventional Branch."
         echo ""
-        echo "  Формат: <type>/<slug>            или"
-        echo "          <type>/<issue#>          или"
-        echo "          <type>/#<issue#>         или"
-        echo "          <type>/<issue#>-<slug>   или"
+        echo "  Format: <type>/<slug>            or"
+        echo "          <type>/<issue#>          or"
+        echo "          <type>/#<issue#>         or"
+        echo "          <type>/<issue#>-<slug>   or"
         echo "          <type>/#<issue#>-<slug>"
         echo ""
-        echo "  Типы:   feat fix hotfix chore docs refactor perf test ci build style security deps"
-        echo "          release  (только для версий: release/X.Y.Z)"
+        echo "  Types:  feat fix hotfix chore docs refactor perf test ci build style security deps"
+        echo "          release  (versions only: release/X.Y.Z)"
         echo ""
-        echo "  Примеры:"
+        echo "  Examples:"
         echo "    feat/4"
         echo "    feat/#4"
         echo "    feat/9-conventional-branches"
@@ -63,7 +63,7 @@ pre-commit:
         echo "    chore/update-deps"
         echo "    release/0.2.0"
         echo ""
-        echo "  Чтобы переименовать: git branch -m <new-name>"
+        echo "  To rename: git branch -m <new-name>"
         echo ""
         exit 1
     pint:
@@ -87,7 +87,7 @@ pre-commit:
         - merge
         - rebase
 
-# pre-push можно включить когда тесты будут стабильно зелёными.
+# pre-push can be enabled once the tests are stably green.
 # pre-push:
 #   commands:
 #     phpunit:

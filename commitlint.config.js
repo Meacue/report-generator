@@ -1,29 +1,29 @@
 /**
  * Conventional Commits validator config for commitlint.
  *
- * Спека: https://www.conventionalcommits.org/en/v1.0.0/
- * Маппинг типов на секции CHANGELOG задан в release-please-config.json.
+ * Spec: https://www.conventionalcommits.org/en/v1.0.0/
+ * The mapping of types to CHANGELOG sections is defined in release-please-config.json.
  *
- * Допустимые типы коммитов:
- *   feat     — новая функциональность (bump MINOR; pre-1.0 — bump PATCH согласно SemVer §4)
- *   fix      — исправление бага (bump PATCH)
- *   perf     — оптимизация без изменения API (CHANGELOG: Changed)
- *   refactor — рефакторинг без изменения поведения (CHANGELOG: Changed)
- *   revert   — откат предыдущего коммита (CHANGELOG: Removed)
- *   deps     — обновление зависимостей (CHANGELOG: Changed, видимое)
- *   security — патч безопасности (CHANGELOG: Security)
- *   docs     — документация (скрыто из CHANGELOG)
- *   chore    — служебные задачи (скрыто)
- *   test     — добавление/правка тестов (скрыто)
- *   ci       — конфигурация CI (скрыто)
- *   build    — сборка/Docker (скрыто)
- *   style    — форматирование (скрыто)
+ * Allowed commit types:
+ *   feat     — new functionality (bumps MINOR; pre-1.0 — bumps PATCH per SemVer §4)
+ *   fix      — bug fix (bumps PATCH)
+ *   perf     — performance, no API change (CHANGELOG: Changed)
+ *   refactor — refactor with no behavior change (CHANGELOG: Changed)
+ *   revert   — revert of a previous commit (CHANGELOG: Removed)
+ *   deps     — dependency updates (CHANGELOG: Changed, visible)
+ *   security — security patch (CHANGELOG: Security)
+ *   docs     — documentation (hidden from CHANGELOG)
+ *   chore    — housekeeping (hidden)
+ *   test     — adding/fixing tests (hidden)
+ *   ci       — CI configuration (hidden)
+ *   build    — build / Docker (hidden)
+ *   style    — formatting (hidden)
  *
- * BREAKING CHANGE — указывается в footer или восклицательным знаком после типа
- *   (feat!: ..., fix!: ...). До 1.0.0 не бампит MAJOR (см. SemVer §4),
- *   после 1.0.0 — обязан бампить MAJOR.
+ * BREAKING CHANGE — declared in the footer or with an exclamation mark after the type
+ *   (feat!: ..., fix!: ...). Before 1.0.0 it does not bump MAJOR (see SemVer §4),
+ *   after 1.0.0 it must bump MAJOR.
  *
- * Примеры:
+ * Examples:
  *   feat(bitrix): sanitize PII in comment payload
  *   fix(report): correct LLM token counter for Russian text
  *   chore(deps): bump phpoffice/phpword to 1.4.1
