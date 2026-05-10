@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Schema;
  *
  * Stub tasks are created when Bitrix24 returns 403 (ACCESS_DENIED) or 404
  * (TASK_NOT_FOUND) for a task referenced by a time-tracking entry. These
- * stubs carry title=null and are rendered as "Задача без названия (#ID)"
- * in the report.
+ * stubs carry title=null and are rendered with an "Untitled (#ID)"
+ * placeholder in the report.
  *
  * NOTE on rollback: the down() migration restores the NOT NULL constraint.
  * Any stub rows that were inserted with title=null will violate this
