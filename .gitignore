@@ -1,19 +1,19 @@
-# IDE и редакторы
+# IDEs and editors
 /.idea/
 /.vscode/
 *.swp
 *.swo
 
-# Окружение
+# Environment
 .env
 .env.*
 !.env.example
 
-# ОС
+# OS
 .DS_Store
 Thumbs.db
 
-# Агенты
+# Agents
 CLAUDE.md
 
 node_modules/
