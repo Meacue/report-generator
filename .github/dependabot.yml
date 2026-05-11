@@ -101,10 +101,12 @@ updates:
     commit-message:
       prefix: "deps"
     groups:
+      # All @commitlint/* packages share an internal API and are released as one
+      # synchronized major — group every semver level so majors land in a single PR.
+      # See #105.
       commitlint:
         patterns:
           - "@commitlint/*"
-        update-types: ["minor", "patch"]
 
   # ─── GitHub Actions ───────────────────────────────────────────
   - package-ecosystem: "github-actions"
