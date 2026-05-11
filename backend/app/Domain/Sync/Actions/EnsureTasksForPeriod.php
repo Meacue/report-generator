@@ -18,7 +18,7 @@ use RuntimeException;
  *
  * When Bitrix24 returns ACCESS_DENIED or TASK_NOT_FOUND (mapped to null by
  * tryGetTask), a stub record is stored with title=null so downstream report
- * rendering can label the task "Задача без названия (#ID)" / "Untitled (#ID)".
+ * rendering can label the task as "Untitled (#ID)".
  *
  * Infrastructure errors (connection, 5xx) are logged and skipped so one bad
  * task cannot break the whole sync. This action is idempotent: calling it

@@ -8,7 +8,7 @@ use RuntimeException;
 
 final class NoDataException extends RuntimeException
 {
-    public function __construct(string $message = 'Нет данных для формирования отчёта. Выполните синхронизацию или проверьте настройки.')
+    public function __construct(string $message = 'No data available to generate the report. Run a sync or check your settings.')
     {
         parent::__construct($message, 422);
     }
