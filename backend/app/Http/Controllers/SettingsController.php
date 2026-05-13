@@ -54,9 +54,20 @@ class SettingsController extends Controller
             'developer_position'      => $settings?->developer_position,
             'enriched_prompt_enabled' => $settings === null ? true : $settings->enriched_prompt_enabled,
             'sync_schedule_time'      => $settings === null ? '03:00' : $settings->sync_schedule_time,
-            'has_gitlab_token'        => $settings?->gitlab_token !== null,
-            'has_bitrix24_api_key'    => $settings?->bitrix24_api_key !== null,
-            'has_llm_api_key'         => $settings?->llm_api_key !== null,
+            'has_gitlab_token'        => $this->hasEncrypted($settings, 'gitlab_token'),
+            'has_bitrix24_api_key'    => $this->hasEncrypted($settings, 'bitrix24_api_key'),
+            'has_llm_api_key'         => $this->hasEncrypted($settings, 'llm_api_key'),
         ];
+    }
+
+    private function hasEncrypted(?Setting $settings, string $column): bool
+    {
+        if ($settings === null) {
+            return false;
+        }
+
+        $raw = $settings->getRawOriginal($column);
+
+        return is_string($raw) && $raw !== '';
     }
 }
