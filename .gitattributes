@@ -1,0 +1,30 @@
+# Default: auto-detect text/binary, normalize line endings on commit
+* text=auto
+
+# Always LF — executed by Linux (shell, Dockerfiles, entrypoints)
+*.sh           text eol=lf
+*.bash         text eol=lf
+Dockerfile     text eol=lf
+*.dockerfile   text eol=lf
+
+# Config files read by Linux tools in containers
+*.conf         text eol=lf
+*.yml          text eol=lf
+*.yaml         text eol=lf
+
+# Windows-native scripts — CRLF if any appear later
+*.bat          text eol=crlf
+*.cmd          text eol=crlf
+*.ps1          text eol=crlf
+
+# Binary assets — никакой конвертации
+*.png          binary
+*.jpg          binary
+*.jpeg         binary
+*.ico          binary
+*.woff         binary
+*.woff2        binary
+*.ttf          binary
+*.pdf          binary
+*.docx         binary
+*.xlsx         binary

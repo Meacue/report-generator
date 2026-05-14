@@ -36,15 +36,15 @@ return [
     ],
 
     'gitlab' => [
-        'token'    => env('GITLAB_TOKEN'),
+        'token'    => env('GITLAB_TOKEN', ''),
         'url'      => env('GITLAB_URL', 'https://gitlab.com'),
         'username' => env('GITLAB_USERNAME'),
     ],
 
     'bitrix24' => [
-        'url'     => env('BITRIX24_URL'),
-        'user_id' => env('BITRIX24_USER_ID'),
-        'api_key' => env('BITRIX24_API_KEY'),
+        'url'     => env('BITRIX24_URL', ''),
+        'user_id' => env('BITRIX24_USER_ID', ''),
+        'api_key' => env('BITRIX24_API_KEY', ''),
     ],
 
 ];
