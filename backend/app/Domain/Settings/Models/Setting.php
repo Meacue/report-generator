@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $gitlab_username
  * @property string|null $gitlab_email
  * @property string|null $bitrix24_api_key
- * @property int|null $bitrix24_user_id
+ * @property string|null $bitrix24_user_id
  * @property string|null $bitrix24_rest_url
  * @property LlmProvider|null $llm_provider
  * @property string|null $llm_api_key

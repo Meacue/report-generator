@@ -13,6 +13,7 @@ services:
     environment:
       - APP_ENV=${APP_ENV:-local}
       - REDIS_HOST=redis
+      - QUEUE_CONNECTION=redis
     networks:
       - rg-network
 
@@ -27,6 +28,7 @@ services:
     environment:
       - APP_ENV=${APP_ENV:-local}
       - REDIS_HOST=redis
+      - QUEUE_CONNECTION=redis
     networks:
       - rg-network
 
