@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $gitlab_email
  * @property string|null $bitrix24_api_key
  * @property int|null $bitrix24_user_id
+ * @property string|null $bitrix24_rest_url
  * @property LlmProvider|null $llm_provider
  * @property string|null $llm_api_key
  * @property string|null $llm_system_prompt
@@ -35,6 +36,7 @@ class Setting extends Model
         'gitlab_email',
         'bitrix24_api_key',
         'bitrix24_user_id',
+        'bitrix24_rest_url',
         'llm_provider',
         'llm_api_key',
         'llm_system_prompt',

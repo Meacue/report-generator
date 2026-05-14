@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
 use App\Domain\Settings\Models\Setting;
 use App\Infrastructure\Bitrix24\Bitrix24Client;
-use App\Domain\Bitrix24\Services\Bitrix24ClientInterface;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +20,9 @@ class Bitrix24ServiceProvider extends ServiceProvider
 
             /** @var string $url */
             $url = config('services.bitrix24.url', '');
+            if ($setting !== null && $setting->bitrix24_rest_url !== null) {
+                $url = $setting->bitrix24_rest_url;
+            }
 
             /** @var string $userId */
             $userId = config('services.bitrix24.user_id', '');
