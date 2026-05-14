@@ -9,6 +9,7 @@ use App\Infrastructure\Bitrix24\Bitrix24Client;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -545,6 +546,91 @@ class Bitrix24ClientTest extends TestCase
         $this->expectExceptionMessage('tasks.task.get');
 
         $this->client->tryGetTask(55);
+    }
+
+    public function test_throws_when_baseurl_empty(): void
+    {
+        // GIVEN: a client constructed with an empty base URL
+        $client = new Bitrix24Client(url: '', userId: '1', apiKey: 'aaaaaaaa');
+
+        Http::fake(['*' => Http::response(['result' => ['task' => []]])]);
+
+        // WHEN / THEN: any API call throws RuntimeException mentioning misconfigured and baseUrl
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/misconfigured/i');
+        $this->expectExceptionMessageMatches('/baseUrl/i');
+
+        $client->getTask('1');
+    }
+
+    public function test_throws_when_userid_empty(): void
+    {
+        // GIVEN: a client constructed with an empty userId
+        $client = new Bitrix24Client(url: self::BASE_URL, userId: '', apiKey: 'aaaaaaaa');
+
+        Http::fake(['*' => Http::response(['result' => ['task' => []]])]);
+
+        // WHEN / THEN: any API call throws RuntimeException mentioning misconfigured and userId
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/misconfigured/i');
+        $this->expectExceptionMessageMatches('/userId/i');
+
+        $client->getTask('1');
+    }
+
+    public function test_throws_when_apikey_empty(): void
+    {
+        // GIVEN: a client constructed with an empty apiKey
+        $client = new Bitrix24Client(url: self::BASE_URL, userId: '1', apiKey: '');
+
+        Http::fake(['*' => Http::response(['result' => ['task' => []]])]);
+
+        // WHEN / THEN: any API call throws RuntimeException mentioning misconfigured and apiKey
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/misconfigured/i');
+        $this->expectExceptionMessageMatches('/apiKey/i');
+
+        $client->getTask('1');
+    }
+
+    public function test_logs_masked_url_on_http_failure(): void
+    {
+        // GIVEN: a client using a real apiKey and a 500 response
+        $realApiKey = 'hcdim7lf2ogndgu3';
+        $client = new Bitrix24Client(
+            url: self::BASE_URL,
+            userId: self::USER_ID,
+            apiKey: $realApiKey,
+        );
+
+        Http::fake(['*' => Http::response('', 500)]);
+        Log::spy();
+
+        // WHEN: getTasks triggers a 500 failure (retries exhausted)
+        try {
+            $client->getTasks('1');
+        } catch (RuntimeException) {
+            // expected — we only care about what was logged
+        }
+
+        // THEN: Log::error was called with a masked URL that contains partial key + *** but NOT the full key
+        Log::shouldHaveReceived('error')
+            ->withArgs(function (string $message, array $context) use ($realApiKey): bool {
+                if (! str_contains($message, 'Bitrix24 API request failed')) {
+                    return false;
+                }
+
+                $loggedUrl = $context['url'] ?? '';
+
+                // must contain masked prefix (first 4 chars + ***)
+                $hasPrefix = str_contains((string) $loggedUrl, 'hcdi***');
+
+                // must NOT expose the full api key
+                $hasFullKey = str_contains((string) $loggedUrl, $realApiKey);
+
+                return $hasPrefix && ! $hasFullKey;
+            })
+            ->once();
     }
 
     protected function setUp(): void

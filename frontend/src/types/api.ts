@@ -12,6 +12,7 @@ export interface Settings {
   gitlab_username: string | null;
   gitlab_email: string | null;
   bitrix24_user_id: string | null;
+  bitrix24_webhook_configured: boolean;
   llm_provider: string;
   llm_system_prompt: string | null;
   enriched_prompt_enabled: boolean;
@@ -27,8 +28,7 @@ export interface SettingsInput {
   gitlab_token?: string;
   gitlab_username?: string;
   gitlab_email?: string;
-  bitrix24_api_key?: string;
-  bitrix24_user_id?: string;
+  bitrix24_webhook_url?: string;
   llm_provider?: string;
   llm_api_key?: string;
   llm_system_prompt?: string;
