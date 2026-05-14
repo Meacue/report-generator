@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.7](https://github.com/Meacue/report-generator/compare/0.2.6...0.2.7) (2026-05-14)
+
+
+### Fixed
+
+* **sync:** make credential resolution survive APP_KEY rotation ([#109](https://github.com/Meacue/report-generator/issues/109)) ([aaf3e88](https://github.com/Meacue/report-generator/commit/aaf3e88634bc9533d38cd857653f616ea6e3735b))
+
+
+### Changed
+
+* bump @commitlint/cli from 19.8.1 to 21.0.0 ([#94](https://github.com/Meacue/report-generator/issues/94)) ([a711579](https://github.com/Meacue/report-generator/commit/a71157985422779a282cc7ab80b2f161f617db40))
+* bump @commitlint/config-conventional from 19.8.1 to 21.0.0 ([#93](https://github.com/Meacue/report-generator/issues/93)) ([e656ca9](https://github.com/Meacue/report-generator/commit/e656ca936410c38512c4314bcc1d4f87e8126838))
+* bump @eslint/js from 9.39.4 to 10.0.1 in /frontend ([#99](https://github.com/Meacue/report-generator/issues/99)) ([8228fbf](https://github.com/Meacue/report-generator/commit/8228fbff14048fa989790f71959871d669f33e22))
+* bump @types/node ([#97](https://github.com/Meacue/report-generator/issues/97)) ([ed7e779](https://github.com/Meacue/report-generator/commit/ed7e779818591d4d8e52148b93fedc2a82d2fdd9))
+* bump fast-uri from 3.1.0 to 3.1.2 ([#101](https://github.com/Meacue/report-generator/issues/101)) ([bccd5d3](https://github.com/Meacue/report-generator/commit/bccd5d3e5c5f6672761355794a90545253d962ef))
+* bump the react group across 1 directory with 2 updates ([#95](https://github.com/Meacue/report-generator/issues/95)) ([32ebf0c](https://github.com/Meacue/report-generator/commit/32ebf0ce5e288ccefdd522302ccd39f823cf3f89))
+* bump typescript-eslint ([#107](https://github.com/Meacue/report-generator/issues/107)) ([fb1e884](https://github.com/Meacue/report-generator/commit/fb1e88484e1be5368e61811bd2e7c2c4750b9f6f))
+* bump typescript-eslint ([#96](https://github.com/Meacue/report-generator/issues/96)) ([7200f3a](https://github.com/Meacue/report-generator/commit/7200f3aa844170000c817363200df28fedfb4913))
+* bump vite from 8.0.10 to 8.0.12 in /frontend ([#108](https://github.com/Meacue/report-generator/issues/108)) ([2c0bc2d](https://github.com/Meacue/report-generator/commit/2c0bc2d91ad8e4047f6d76b3aa28df3c9258b177))
+
 ## [0.2.6](https://github.com/Meacue/report-generator/compare/0.2.5...0.2.6) (2026-05-06)
 
 
