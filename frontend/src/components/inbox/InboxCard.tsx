@@ -39,7 +39,8 @@ export function InboxCard({
         borderRadius: "8px",
         padding: "16px",
         marginBottom: "12px",
-        background: "#fff",
+        background: "var(--card-bg)",
+        color: "var(--card-fg)",
       }}
     >
       <div

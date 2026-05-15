@@ -94,7 +94,8 @@ export function ReportTasksTab({ reportId, tasks }: Props) {
             <div
               key={task.id}
               style={{
-                background: "#f9f9f9",
+                background: "var(--card-bg)",
+                color: "var(--card-fg)",
                 borderRadius: "8px",
                 padding: "16px 20px",
                 marginBottom: "12px",
