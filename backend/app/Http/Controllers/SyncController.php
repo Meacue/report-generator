@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Settings\Models\Setting;
 use App\Domain\Shared\ValueObjects\DateRange;
 use App\Domain\Sync\Enums\SyncStatus;
 use App\Jobs\RunSyncJob;
@@ -50,6 +51,14 @@ class SyncController extends Controller
             return response()->json(['error' => 'Sync is already in progress'], 409);
         }
 
+        $missing = $this->missingCredentials();
+        if ($missing !== []) {
+            return response()->json([
+                'error'   => 'Credentials are not configured',
+                'missing' => $missing,
+            ], 422);
+        }
+
         $syncJob = SyncJob::create([
             'type'       => 'full',
             'status'     => SyncStatus::InProgress,
@@ -68,6 +77,14 @@ class SyncController extends Controller
     {
         if (SyncJob::isRunning()) {
             return response()->json(['error' => 'Sync is already in progress'], 409);
+        }
+
+        $missing = $this->missingCredentials();
+        if ($missing !== []) {
+            return response()->json([
+                'error'   => 'Credentials are not configured',
+                'missing' => $missing,
+            ], 422);
         }
 
         /** @var array{date_from: string, date_to: string} $validated */
@@ -201,6 +218,38 @@ class SyncController extends Controller
         $syncJob->markFailed('Sync timed out');
 
         return true;
+    }
+
+    /** @return list<string> */
+    private function missingCredentials(): array
+    {
+        $settings = Setting::query()->first();
+        $missing = [];
+
+        if (! $this->hasEncrypted($settings, 'gitlab_token')) {
+            $missing[] = 'gitlab_token';
+        }
+        if ($settings === null || $settings->bitrix24_rest_url === null || $settings->bitrix24_rest_url === '') {
+            $missing[] = 'bitrix24_rest_url';
+        }
+        if ($settings === null || $settings->bitrix24_user_id === null || $settings->bitrix24_user_id === '') {
+            $missing[] = 'bitrix24_user_id';
+        }
+        if (! $this->hasEncrypted($settings, 'bitrix24_api_key')) {
+            $missing[] = 'bitrix24_api_key';
+        }
+
+        return $missing;
+    }
+
+    private function hasEncrypted(?Setting $settings, string $column): bool
+    {
+        if ($settings === null) {
+            return false;
+        }
+        $raw = $settings->getRawOriginal($column);
+
+        return is_string($raw) && $raw !== '';
     }
 
     private function sendInitialState(?SyncJob $job): void

@@ -33,6 +33,9 @@ class RunSyncJob implements ShouldQueue
         public readonly ?string $dateFrom = null,
         public readonly ?string $dateTo = null,
     ) {
+        // PHP 8.4: declaring a typed/default property $queue conflicts with the untyped
+        // $queue in the Queueable trait. Use onQueue() instead.
+        $this->onQueue('sync');
     }
 
     public function handle(SyncGitLab $syncGitLab, SyncBitrix24 $syncBitrix24): void
