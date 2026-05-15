@@ -106,7 +106,8 @@ describe("SettingsForm", () => {
     const user = userEvent.setup();
 
     const input = screen.getByPlaceholderText(/your-portal\.bitrix24\.ru/);
-    const webhook = "https://example-portal.bitrix24.ru/rest/1/testwebhookkey00/";
+    const webhook =
+      "https://example-portal.bitrix24.ru/rest/1/testwebhookkey00/";
     await user.type(input, webhook);
     await user.tab();
 
