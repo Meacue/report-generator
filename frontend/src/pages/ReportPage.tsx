@@ -142,7 +142,8 @@ export function ReportPage() {
         <div
           style={{
             maxWidth: "600px",
-            background: "#f9f9f9",
+            background: "var(--card-bg)",
+            color: "var(--card-fg)",
             padding: "24px",
             borderRadius: "8px",
           }}

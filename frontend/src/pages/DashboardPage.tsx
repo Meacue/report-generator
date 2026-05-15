@@ -10,7 +10,8 @@ export function DashboardPage() {
 
       <section
         style={{
-          background: "#f9f9f9",
+          background: "var(--card-bg)",
+          color: "var(--card-fg)",
           borderRadius: "8px",
           padding: "20px",
           marginBottom: "24px",
