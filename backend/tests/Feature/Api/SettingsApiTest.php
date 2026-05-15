@@ -110,4 +110,115 @@ class SettingsApiTest extends TestCase
                 'has_llm_api_key'      => true,
             ]);
     }
+
+    public function test_update_settings_parses_webhook_url_and_stores_three_parts(): void
+    {
+        // GIVEN: a valid Bitrix24 webhook URL
+        $webhookUrl = 'https://example-portal.bitrix24.ru/rest/1/testwebhookkey00/';
+
+        // WHEN: PUT /api/settings with the webhook URL
+        $response = $this->putJson('/api/settings', [
+            'bitrix24_webhook_url' => $webhookUrl,
+        ]);
+
+        // THEN: response is 200 and all three credential columns are persisted
+        $response->assertOk()
+            ->assertJson(['message' => 'Settings updated']);
+
+        $this->assertDatabaseHas('settings', [
+            'bitrix24_user_id'  => '1',
+            'bitrix24_rest_url' => 'https://example-portal.bitrix24.ru/rest',
+        ]);
+
+        /** @var Setting $setting */
+        $setting = Setting::query()->first();
+        $this->assertSame('testwebhookkey00', $setting->bitrix24_api_key);
+    }
+
+    public function test_update_settings_rejects_invalid_webhook_url(): void
+    {
+        // GIVEN: a garbage webhook URL that fails regex validation
+        // WHEN: PUT /api/settings with invalid webhook URL
+        $response = $this->putJson('/api/settings', [
+            'bitrix24_webhook_url' => 'garbage',
+        ]);
+
+        // THEN: 422 Unprocessable Entity with error for the webhook field
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['bitrix24_webhook_url']);
+    }
+
+    public function test_update_settings_without_webhook_keeps_existing_credentials(): void
+    {
+        // GIVEN: a Setting already configured with Bitrix24 webhook credentials
+        Setting::factory()->create([
+            'bitrix24_rest_url' => 'https://example-portal.bitrix24.ru/rest',
+            'bitrix24_user_id'  => '1',
+            'bitrix24_api_key'  => 'testwebhookkey00',
+            'gitlab_username'   => 'old.user',
+        ]);
+
+        // WHEN: PUT /api/settings without bitrix24_webhook_url (only updating gitlab_username)
+        $response = $this->putJson('/api/settings', [
+            'gitlab_username' => 'new.user',
+        ]);
+
+        // THEN: response is 200 and webhook credentials are untouched
+        $response->assertOk();
+
+        $this->assertDatabaseHas('settings', [
+            'bitrix24_rest_url' => 'https://example-portal.bitrix24.ru/rest',
+            'bitrix24_user_id'  => '1',
+            'gitlab_username'   => 'new.user',
+        ]);
+
+        /** @var Setting $setting */
+        $setting = Setting::query()->first();
+        $this->assertSame('testwebhookkey00', $setting->bitrix24_api_key);
+    }
+
+    public function test_settings_index_returns_webhook_configured_true_when_all_parts_present(): void
+    {
+        // GIVEN: a Setting with all three webhook parts filled in
+        Setting::factory()->create([
+            'bitrix24_rest_url' => 'https://example-portal.bitrix24.ru/rest',
+            'bitrix24_user_id'  => '1',
+            'bitrix24_api_key'  => 'testwebhookkey00',
+        ]);
+
+        // WHEN: GET /api/settings
+        $response = $this->getJson('/api/settings');
+
+        // THEN: bitrix24_webhook_configured is true
+        $response->assertOk()
+            ->assertJson(['bitrix24_webhook_configured' => true]);
+    }
+
+    public function test_settings_index_returns_webhook_configured_false_when_no_setting_exists(): void
+    {
+        // GIVEN: no Setting record in the database
+        // WHEN: GET /api/settings
+        $response = $this->getJson('/api/settings');
+
+        // THEN: bitrix24_webhook_configured is false
+        $response->assertOk()
+            ->assertJson(['bitrix24_webhook_configured' => false]);
+    }
+
+    public function test_settings_index_returns_webhook_configured_false_when_rest_url_missing(): void
+    {
+        // GIVEN: a Setting with user_id and api_key but no rest_url
+        Setting::factory()->create([
+            'bitrix24_rest_url' => null,
+            'bitrix24_user_id'  => '1',
+            'bitrix24_api_key'  => 'testwebhookkey00',
+        ]);
+
+        // WHEN: GET /api/settings
+        $response = $this->getJson('/api/settings');
+
+        // THEN: bitrix24_webhook_configured is false (incomplete config)
+        $response->assertOk()
+            ->assertJson(['bitrix24_webhook_configured' => false]);
+    }
 }

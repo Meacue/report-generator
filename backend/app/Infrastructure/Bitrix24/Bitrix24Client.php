@@ -37,7 +37,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         private readonly int $timeout = 30,
         private readonly int $retries = 3,
     ) {
-        $this->baseUrl = $this->stripTrailingUserId(rtrim($url, '/'));
+        $this->baseUrl = rtrim($url, '/');
     }
 
     public function getTasks(
@@ -141,6 +141,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         } catch (ConnectionException $e) {
             Log::error('Bitrix24 API connection error', [
                 'method' => 'tasks.task.get',
+                'url'    => $this->maskedUrl('tasks.task.get'),
                 'error'  => $e->getMessage(),
             ]);
 
@@ -159,6 +160,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         if ($response->failed()) {
             Log::error('Bitrix24 API request failed', [
                 'method' => 'tasks.task.get',
+                'url'    => $this->maskedUrl('tasks.task.get'),
                 'status' => $response->status(),
                 'body'   => $response->body(),
             ]);
@@ -186,6 +188,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
 
             Log::error('Bitrix24 API returned error', [
                 'method'      => 'tasks.task.get',
+                'url'         => $this->maskedUrl('tasks.task.get'),
                 'error'       => $data['error'],
                 'description' => $errorMessage,
             ]);
@@ -294,25 +297,40 @@ final class Bitrix24Client implements Bitrix24ClientInterface
 
     /**
      * Build the full API endpoint URL.
+     *
+     * @throws RuntimeException when any of the three URL parts is empty —
+     *                          better to fail loudly here than to send a
+     *                          malformed request to Bitrix24 (or worse, to
+     *                          a random IP like `0.0.0.250`).
      */
     private function buildUrl(string $method): string
     {
+        if ($this->baseUrl === '') {
+            throw new RuntimeException('Bitrix24 client misconfigured: baseUrl is empty');
+        }
+
+        if ($this->userId === '') {
+            throw new RuntimeException('Bitrix24 client misconfigured: userId is empty');
+        }
+
+        if ($this->apiKey === '') {
+            throw new RuntimeException('Bitrix24 client misconfigured: apiKey is empty');
+        }
+
         return sprintf('%s/%s/%s/%s.json', $this->baseUrl, $this->userId, $this->apiKey, $method);
     }
 
     /**
-     * Strip trailing user_id segment from URL if already included.
-     *
-     * Example: "https://domain.bitrix24.ru/rest/250" -> "https://domain.bitrix24.ru/rest"
+     * Build the full API endpoint URL with the api_key segment masked, so it
+     * is safe to include in log context without leaking credentials.
      */
-    private function stripTrailingUserId(string $url): string
+    private function maskedUrl(string $method): string
     {
-        $suffix = '/' . $this->userId;
-        if ($this->userId !== '' && str_ends_with($url, $suffix)) {
-            return substr($url, 0, -strlen($suffix));
-        }
+        $maskedKey = strlen($this->apiKey) >= 4
+            ? substr($this->apiKey, 0, 4) . '***'
+            : '***';
 
-        return $url;
+        return sprintf('%s/%s/%s/%s.json', $this->baseUrl, $this->userId, $maskedKey, $method);
     }
 
     /**
@@ -342,6 +360,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         } catch (ConnectionException $e) {
             Log::error('Bitrix24 API connection error', [
                 'method' => $method,
+                'url'    => $this->maskedUrl($method),
                 'error'  => $e->getMessage(),
             ]);
 
@@ -355,6 +374,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
         if ($response->failed()) {
             Log::error('Bitrix24 API request failed', [
                 'method' => $method,
+                'url'    => $this->maskedUrl($method),
                 'status' => $response->status(),
                 'body'   => $response->body(),
             ]);
@@ -375,6 +395,7 @@ final class Bitrix24Client implements Bitrix24ClientInterface
 
             Log::error('Bitrix24 API returned error', [
                 'method'      => $method,
+                'url'         => $this->maskedUrl($method),
                 'error'       => $data['error'],
                 'description' => $errorMessage,
             ]);

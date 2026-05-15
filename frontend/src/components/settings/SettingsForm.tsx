@@ -8,11 +8,17 @@ interface SettingsFormProps {
   saveMessage: string | null;
 }
 
+const WEBHOOK_URL_REGEX =
+  /^https?:\/\/[^/\s]+(?::\d+)?\/rest\/\d+\/[A-Za-z0-9]+\/?$/;
+
+const WEBHOOK_ERROR_MESSAGE =
+  "Формат: https://<портал>.bitrix24.ru/rest/<user_id>/<api_key>/";
+
 function buildInitialForm(settings: Settings): SettingsInput {
   return {
     gitlab_username: settings.gitlab_username ?? "",
     gitlab_email: settings.gitlab_email ?? "",
-    bitrix24_user_id: settings.bitrix24_user_id ?? "",
+    bitrix24_webhook_url: "",
     llm_provider: settings.llm_provider,
     llm_system_prompt: settings.llm_system_prompt ?? "",
     enriched_prompt_enabled: settings.enriched_prompt_enabled,
@@ -31,17 +37,34 @@ export function SettingsForm({
   const [form, setForm] = useState<SettingsInput>(() =>
     buildInitialForm(initial),
   );
+  const [webhookError, setWebhookError] = useState<string | null>(null);
 
   const handleChange = (field: keyof SettingsInput, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleWebhookBlur = (value: string) => {
+    const trimmed = value.trim();
+    if (trimmed === "") {
+      setWebhookError(null);
+      return;
+    }
+    if (!WEBHOOK_URL_REGEX.test(trimmed)) {
+      setWebhookError(WEBHOOK_ERROR_MESSAGE);
+      return;
+    }
+    setWebhookError(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (webhookError !== null) {
+      return;
+    }
     // Only send non-empty password fields
     const payload: SettingsInput = { ...form };
     if (!payload.gitlab_token) delete payload.gitlab_token;
-    if (!payload.bitrix24_api_key) delete payload.bitrix24_api_key;
+    if (!payload.bitrix24_webhook_url) delete payload.bitrix24_webhook_url;
     if (!payload.llm_api_key) delete payload.llm_api_key;
     onSubmit(payload);
   };
@@ -143,33 +166,50 @@ export function SettingsForm({
 
       <div style={fieldStyle}>
         <label style={labelStyle}>
-          Bitrix24 API Key{" "}
+          Bitrix24 Webhook URL{" "}
           <span
             style={{
-              color: statusColor(initial.has_bitrix24_api_key),
+              color: statusColor(initial.bitrix24_webhook_configured),
               fontWeight: "normal",
             }}
           >
-            {statusText(initial.has_bitrix24_api_key)}
+            {statusText(initial.bitrix24_webhook_configured)}
           </span>
         </label>
+        <div
+          style={{
+            marginTop: "-4px",
+            marginBottom: "8px",
+            fontSize: "12px",
+            color: "rgba(255, 255, 255, 0.5)",
+          }}
+        >
+          Полный webhook URL (Bitrix24 &rarr; Разработчикам &rarr; Другое &rarr;
+          Входящий вебхук). Формат:
+          https://&lt;портал&gt;.bitrix24.ru/rest/&lt;user_id&gt;/&lt;api_key&gt;/
+        </div>
         <input
           type="password"
-          placeholder="Введите новый ключ для обновления"
-          value={form.bitrix24_api_key ?? ""}
-          onChange={(e) => handleChange("bitrix24_api_key", e.target.value)}
-          style={inputStyle}
+          placeholder="https://your-portal.bitrix24.ru/rest/123/abc.../"
+          value={form.bitrix24_webhook_url ?? ""}
+          onChange={(e) => handleChange("bitrix24_webhook_url", e.target.value)}
+          onBlur={(e) => handleWebhookBlur(e.target.value)}
+          style={{
+            ...inputStyle,
+            border: webhookError ? "1px solid #e53e3e" : "1px solid #444",
+          }}
         />
-      </div>
-
-      <div style={fieldStyle}>
-        <label style={labelStyle}>Bitrix24 User ID</label>
-        <input
-          type="text"
-          value={form.bitrix24_user_id ?? ""}
-          onChange={(e) => handleChange("bitrix24_user_id", e.target.value)}
-          style={inputStyle}
-        />
+        {webhookError && (
+          <div
+            style={{
+              marginTop: "6px",
+              fontSize: "12px",
+              color: "#e53e3e",
+            }}
+          >
+            {webhookError}
+          </div>
+        )}
       </div>
 
       <div style={fieldStyle}>
@@ -347,14 +387,16 @@ export function SettingsForm({
       >
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || webhookError !== null}
           style={{
             padding: "10px 24px",
-            background: isSubmitting ? "#999" : "#646cff",
+            background:
+              isSubmitting || webhookError !== null ? "#999" : "#646cff",
             color: "#fff",
             border: "none",
             borderRadius: "6px",
-            cursor: isSubmitting ? "not-allowed" : "pointer",
+            cursor:
+              isSubmitting || webhookError !== null ? "not-allowed" : "pointer",
             fontSize: "15px",
           }}
         >
