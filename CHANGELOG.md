@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.8](https://github.com/Meacue/report-generator/compare/0.2.7...0.2.8) (2026-05-17)
+
+
+### Fixed
+
+* **bitrix24:** validate webhook URL on save and unify credential sources ([#119](https://github.com/Meacue/report-generator/issues/119)) ([2331410](https://github.com/Meacue/report-generator/commit/233141007c4a80b1c2a26d0b2a6069fd076410fe))
+* **narrative:** preflight LLM config to prevent silent empty reports ([#124](https://github.com/Meacue/report-generator/issues/124)) ([9396b62](https://github.com/Meacue/report-generator/commit/9396b62b8f1c0dffad4d1320a48c7258f550ec22))
+* **sync:** use Redis queue, guard trigger on missing credentials, add sync:reset ([#120](https://github.com/Meacue/report-generator/issues/120)) ([93baec9](https://github.com/Meacue/report-generator/commit/93baec9e9450b4164247700d66f7cb4a5f590cad))
+* **ui:** restore card header contrast via dedicated foreground token ([#29](https://github.com/Meacue/report-generator/issues/29)) ([#123](https://github.com/Meacue/report-generator/issues/123)) ([9396377](https://github.com/Meacue/report-generator/commit/93963776a1a78daa7cbb3f36f183f80caef8b895))
+
 ## [0.2.7](https://github.com/Meacue/report-generator/compare/0.2.6...0.2.7) (2026-05-14)
 
 
