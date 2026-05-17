@@ -31,9 +31,15 @@ final readonly class GenerateNarrativesForReport
         $report->load(['reportTasks.task.matchResults.branch.commits', 'reportDays.reportDayTasks.reportTask.task']);
         $systemPrompt = $this->support->getSystemPrompt();
 
+        $this->generateGlobalTaskNarratives($report, $systemPrompt);
+
+        // Refresh nested reportTask relations so day-task fallback sees the just-generated global narratives
+        // (Eloquent caches each relation separately, so updating $report->reportTasks does not propagate
+        // to $report->reportDays->reportDayTasks->reportTask instances).
+        $report->load('reportDays.reportDayTasks.reportTask.task');
+
         $this->generateDayTaskNarratives($report, $systemPrompt);
         $this->generateDayLevelNarratives($report, $systemPrompt);
-        $this->generateGlobalTaskNarratives($report, $systemPrompt);
 
         $report->markAsGenerated();
     }

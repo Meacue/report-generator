@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Narrative\Exceptions\InvalidLlmConfigException;
 use App\Exceptions\InvalidTokenException;
 use App\Exceptions\NoDataException;
 use App\Exceptions\ServiceUnavailableException;
@@ -8,6 +9,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -48,6 +50,22 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->wantsJson() || $request->is('api/*')) {
                 return response()->json([
                     'error' => $e->getMessage(),
+                ], 422);
+            }
+
+            return null;
+        });
+
+        $exceptions->render(function (InvalidLlmConfigException $e, Request $request): ?JsonResponse {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                Log::warning('Report generation aborted: invalid LLM config', [
+                    'violations' => $e->violations,
+                ]);
+
+                return response()->json([
+                    'error'        => 'LLM configuration is invalid',
+                    'violations'   => $e->violations,
+                    'settings_url' => '/settings',
                 ], 422);
             }
 

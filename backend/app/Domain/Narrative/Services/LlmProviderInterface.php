@@ -21,4 +21,9 @@ interface LlmProviderInterface
     public function isAvailable(): bool;
 
     public function getProviderName(): string;
+
+    /**
+     * @return list<string> Reasons why current configuration is invalid; empty array means OK.
+     */
+    public function validate(): array;
 }
