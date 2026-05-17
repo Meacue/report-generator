@@ -10,6 +10,7 @@ use App\Domain\Narrative\Actions\RegenerateDayNarrative;
 use App\Domain\Narrative\Actions\RegenerateTaskNarrative;
 use App\Domain\Narrative\Actions\UndoDayNarrative;
 use App\Domain\Narrative\Actions\UndoTaskNarrative;
+use App\Domain\Narrative\Services\LlmConfigValidator;
 use App\Domain\Matching\DTOs\UnclassifiedCommit;
 use App\Domain\Matching\Queries\GetUnclassifiedCommitsForDateRange;
 use App\Domain\Report\Actions\GenerateReport;
@@ -89,7 +90,10 @@ class ReportController extends Controller
         GenerateReportRequest $request,
         GenerateReport $generateReport,
         HasDataForDateRange $hasData,
+        LlmConfigValidator $llmConfigValidator,
     ): JsonResponse {
+        $llmConfigValidator->validate();
+
         /** @var array{type: string, date_from: string, date_to: string} $validated */
         $validated = $request->validated();
 

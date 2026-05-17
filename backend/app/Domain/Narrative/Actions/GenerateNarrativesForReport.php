@@ -26,14 +26,20 @@ final readonly class GenerateNarrativesForReport
     ) {
     }
 
+    /**
+     * Reloads the nested reportTask relation between global and day-task stages so the fallback observes the freshly written global narrative.
+     */
     public function __invoke(Report $report): void
     {
         $report->load(['reportTasks.task.matchResults.branch.commits', 'reportDays.reportDayTasks.reportTask.task']);
         $systemPrompt = $this->support->getSystemPrompt();
 
+        $this->generateGlobalTaskNarratives($report, $systemPrompt);
+
+        $report->load('reportDays.reportDayTasks.reportTask.task');
+
         $this->generateDayTaskNarratives($report, $systemPrompt);
         $this->generateDayLevelNarratives($report, $systemPrompt);
-        $this->generateGlobalTaskNarratives($report, $systemPrompt);
 
         $report->markAsGenerated();
     }

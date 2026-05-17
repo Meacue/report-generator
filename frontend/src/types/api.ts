@@ -77,6 +77,12 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export interface LlmConfigErrorData {
+  error: string;
+  violations: string[];
+  settings_url?: string;
+}
+
 export interface InboxItem {
   id: number;
   branch_name: string;

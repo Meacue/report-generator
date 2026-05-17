@@ -7,6 +7,8 @@ import {
   useExportPrompt,
 } from "../hooks/useReports";
 import type { GenerateReportParams } from "../api/reports";
+import { ApiError } from "../api/client";
+import type { LlmConfigErrorData } from "../types/api";
 import { ReportDaysTab } from "../components/report/ReportDaysTab";
 import { ReportTasksTab } from "../components/report/ReportTasksTab";
 import { ReportsList } from "../components/report/ReportsList";
@@ -65,6 +67,24 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function extractLlmConfigError(error: unknown): LlmConfigErrorData | null {
+  if (!(error instanceof ApiError) || error.status !== 422) {
+    return null;
+  }
+  const data = error.data;
+  if (data === null || typeof data !== "object") {
+    return null;
+  }
+  const violations = (data as { violations?: unknown }).violations;
+  if (!Array.isArray(violations)) {
+    return null;
+  }
+  if (!violations.every((v): v is string => typeof v === "string")) {
+    return null;
+  }
+  return data as LlmConfigErrorData;
+}
+
 export function ReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -115,7 +135,17 @@ export function ReportPage() {
           navigate(`/reports/${data.id}`);
         }
       },
-      onError: () => {
+      onError: (error) => {
+        const llmConfigError = extractLlmConfigError(error);
+        if (llmConfigError) {
+          const violations = llmConfigError.violations
+            .map((v) => `• ${v}`)
+            .join("\n");
+          setErrorMessage(
+            `Конфигурация LLM некорректна:\n${violations}\n\nОткройте Настройки и заполните необходимые поля.`,
+          );
+          return;
+        }
         setErrorMessage(
           "Не удалось сгенерировать отчёт. Проверьте наличие данных за выбранный период.",
         );
@@ -352,6 +382,7 @@ export function ReportPage() {
                 color: "#c53030",
                 marginBottom: "16px",
                 fontSize: "14px",
+                whiteSpace: "pre-line",
               }}
             >
               {errorMessage}

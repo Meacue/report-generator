@@ -12,6 +12,7 @@ use App\Domain\Narrative\DTOs\TaskNarrativeResponse;
 use App\Domain\Narrative\Services\LlmProviderInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 use RuntimeException;
 
 class OpenAiProvider implements LlmProviderInterface
@@ -124,10 +125,38 @@ class OpenAiProvider implements LlmProviderInterface
     }
 
     /**
+     * @return list<string>
+     */
+    public function validate(): array
+    {
+        $violations = [];
+
+        if ($this->apiKey === '') {
+            $violations[] = 'LLM_API_KEY is required';
+        }
+
+        if ($this->maxTokens < 1) {
+            $violations[] = 'LLM_MAX_TOKENS must be >= 1';
+        }
+
+        if ($this->model === '') {
+            $violations[] = 'LLM model is not configured';
+        }
+
+        return $violations;
+    }
+
+    /**
      * @return array{narrative: string, tokens_used: int}
      */
     private function sendRequest(string $systemPrompt, string $userPrompt): array
     {
+        if ($this->maxTokens < 1) {
+            throw new InvalidArgumentException(
+                'LLM max_tokens must be >= 1, got ' . $this->maxTokens
+            );
+        }
+
         try {
             return retry(
                 self::MAX_RETRIES,
@@ -186,6 +215,13 @@ class OpenAiProvider implements LlmProviderInterface
         $data = $response->json();
 
         $narrative = $data['choices'][0]['message']['content'] ?? '';
+
+        if (trim($narrative) === '') {
+            throw new RuntimeException(
+                'LLM returned empty content (possibly max_tokens=0 or filtered response)'
+            );
+        }
+
         $tokensUsed = $data['usage']['total_tokens'];
 
         return [

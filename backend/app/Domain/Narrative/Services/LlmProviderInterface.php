@@ -21,4 +21,9 @@ interface LlmProviderInterface
     public function isAvailable(): bool;
 
     public function getProviderName(): string;
+
+    /**
+     * @return list<string>
+     */
+    public function validate(): array;
 }

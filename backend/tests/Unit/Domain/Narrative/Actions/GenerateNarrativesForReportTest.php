@@ -190,9 +190,10 @@ final class GenerateNarrativesForReportTest extends TestCase
 
         ($this->action)($report);
 
-        $this->assertGreaterThanOrEqual(2, count($this->mockLlm->narrativeRequests));
-        $this->assertSame([], $this->mockLlm->narrativeRequests[0]->previousNarratives);
-        $this->assertSame([$this->mockLlm->narrativeText], $this->mockLlm->narrativeRequests[1]->previousNarratives);
+        $dayTaskRequests = $this->dayTaskRequests();
+        $this->assertGreaterThanOrEqual(2, count($dayTaskRequests));
+        $this->assertSame([], $dayTaskRequests[0]->previousNarratives);
+        $this->assertSame([$this->mockLlm->narrativeText], $dayTaskRequests[1]->previousNarratives);
     }
 
     public function test_day_task_third_day_receives_two_previous_narratives(): void
@@ -215,7 +216,9 @@ final class GenerateNarrativesForReportTest extends TestCase
 
         ($this->action)($report);
 
-        $this->assertCount(2, $this->mockLlm->narrativeRequests[2]->previousNarratives);
+        $dayTaskRequests = $this->dayTaskRequests();
+        $this->assertCount(3, $dayTaskRequests);
+        $this->assertCount(2, $dayTaskRequests[2]->previousNarratives);
     }
 
     public function test_different_tasks_do_not_share_previous_narratives(): void
@@ -275,11 +278,114 @@ final class GenerateNarrativesForReportTest extends TestCase
         $this->assertSame([], $this->mockLlm->narrativeRequests[1]->previousNarratives);
     }
 
+    /** Day-task with no commits falls back to global narrative generated in the same invocation. */
+    public function test_global_task_narrative_is_generated_before_day_task_narratives(): void
+    {
+        $report = Report::factory()->draft()->create();
+        $task = Task::factory()->create();
+        $branch = Branch::factory()->create();
+        MatchResult::factory()->auto()->create(['branch_id' => $branch->id, 'task_id' => $task->id]);
+
+        $reportTask = ReportTask::factory()->create([
+            'report_id' => $report->id,
+            'task_id'   => $task->id,
+            'narrative' => null,
+        ]);
+
+        $reportDay = ReportDay::factory()->fromCommits()->create(['report_id' => $report->id, 'date' => '2024-03-11']);
+        $reportDayTask = ReportDayTask::factory()->create([
+            'report_day_id'  => $reportDay->id,
+            'report_task_id' => $reportTask->id,
+        ]);
+
+        ($this->action)($report);
+
+        $reportDayTask->refresh();
+
+        $this->assertSame(
+            $this->mockLlm->narrativeText,
+            $reportDayTask->narrative,
+            'Day-task fallback must contain the global LLM narrative — proving global ran before day-task'
+        );
+    }
+
+    public function test_day_task_fallback_uses_already_generated_global_narrative(): void
+    {
+        $report = Report::factory()->draft()->create();
+        $task = Task::factory()->create();
+        $branch = Branch::factory()->create();
+        MatchResult::factory()->auto()->create(['branch_id' => $branch->id, 'task_id' => $task->id]);
+
+        $reportTask = ReportTask::factory()->create([
+            'report_id' => $report->id,
+            'task_id'   => $task->id,
+            'narrative' => null,
+        ]);
+
+        $reportDay = ReportDay::factory()->fromCommits()->create(['report_id' => $report->id, 'date' => '2024-03-11']);
+        $reportDayTask = ReportDayTask::factory()->create([
+            'report_day_id'  => $reportDay->id,
+            'report_task_id' => $reportTask->id,
+        ]);
+
+        ($this->action)($report);
+
+        $reportDayTask->refresh();
+
+        $this->assertSame(
+            $this->mockLlm->narrativeText,
+            $reportDayTask->narrative,
+            'When day-task falls back, it must receive the global narrative that was already generated'
+        );
+    }
+
+    public function test_day_task_fallback_uses_placeholder_when_global_also_failed(): void
+    {
+        $report = Report::factory()->draft()->create();
+        $task = Task::factory()->create();
+        $branch = Branch::factory()->create();
+        MatchResult::factory()->auto()->create(['branch_id' => $branch->id, 'task_id' => $task->id]);
+
+        $reportTask = ReportTask::factory()->create([
+            'report_id' => $report->id,
+            'task_id'   => $task->id,
+            'narrative' => null,
+        ]);
+
+        $reportDay = ReportDay::factory()->fromCommits()->create(['report_id' => $report->id, 'date' => '2024-03-11']);
+        $reportDayTask = ReportDayTask::factory()->create([
+            'report_day_id'  => $reportDay->id,
+            'report_task_id' => $reportTask->id,
+        ]);
+
+        $this->mockLlm->shouldFail = true;
+
+        ($this->action)($report);
+
+        $reportDayTask->refresh();
+
+        $this->assertSame(
+            '[Не удалось сгенерировать описание. Отредактируйте вручную.]',
+            $reportDayTask->narrative,
+            'When global fails (placeholder) and day-task falls back, it must receive the placeholder — not null'
+        );
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->mockLlm = new MockLlmProvider();
         $this->action = new GenerateNarrativesForReport($this->mockLlm, new NarrativeSupport());
+    }
+
+    /** @return list<\App\Domain\Narrative\DTOs\TaskNarrativeRequest> */
+    private function dayTaskRequests(): array
+    {
+        return array_values(array_filter(
+            $this->mockLlm->narrativeRequests,
+            fn (mixed $_, int $i): bool => ($this->mockLlm->callOrder[$i] ?? null) === 'day-task',
+            ARRAY_FILTER_USE_BOTH,
+        ));
     }
 }
