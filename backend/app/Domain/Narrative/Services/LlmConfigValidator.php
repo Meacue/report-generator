@@ -12,9 +12,6 @@ final readonly class LlmConfigValidator
     {
     }
 
-    /**
-     * @throws InvalidLlmConfigException
-     */
     public function validate(): void
     {
         $violations = $this->provider->validate();

@@ -6,10 +6,6 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { ReportPage } from "../ReportPage";
 
-// ---------------------------------------------------------------------------
-// Module mocks
-// ---------------------------------------------------------------------------
-
 vi.mock("../../api/reports", () => ({
   reportsApi: {
     generate: vi.fn(),
@@ -20,14 +16,6 @@ vi.mock("../../api/reports", () => ({
     getPreview: vi.fn(),
   },
 }));
-
-// We also need to mock the hooks so they call the mocked api module.
-// useGenerateReport internally calls reportsApi.generate via useMutation.
-// Because we mock the module, the hook will use our mocked version.
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function buildQueryClient(): QueryClient {
   return new QueryClient({
@@ -50,10 +38,6 @@ function renderReportPage(path = "/reports"): void {
     </QueryClientProvider>,
   );
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("ReportPage — LLM config error handling", () => {
   beforeEach(() => {
@@ -79,8 +63,6 @@ describe("ReportPage — LLM config error handling", () => {
 
     await userEvent.click(generateButton);
 
-    // After the frontend agent implements 422/violations handling, this text must appear.
-    // Until then (TDD red), the component falls through to the generic error message.
     await waitFor(() => {
       expect(screen.getByText(/LLM_MAX_TOKENS/i)).toBeInTheDocument();
     });

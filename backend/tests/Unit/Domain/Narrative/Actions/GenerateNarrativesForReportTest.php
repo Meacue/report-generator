@@ -278,18 +278,7 @@ final class GenerateNarrativesForReportTest extends TestCase
         $this->assertSame([], $this->mockLlm->narrativeRequests[1]->previousNarratives);
     }
 
-    /**
-     * When a day-task has no commits of its own, it must fall back to the global narrative.
-     * After the order fix (global → day-task → day-level), global has already been generated
-     * when fallback runs, so day-task gets the LLM-generated global text.
-     * With the current wrong order (day-task → day-level → global), fallback runs before
-     * global, copying whatever value the reportTask had before generation (null or DB preset).
-     *
-     * Fixture: reportTask is created with narrative=null; no commits on this specific day
-     * so the code triggers fallbackToGlobalNarrative() immediately.
-     *
-     * TDD red test — fails until the execution order is fixed to global → day-task.
-     */
+    /** Day-task with no commits falls back to global narrative generated in the same invocation. */
     public function test_global_task_narrative_is_generated_before_day_task_narratives(): void
     {
         $report = Report::factory()->draft()->create();
@@ -297,27 +286,22 @@ final class GenerateNarrativesForReportTest extends TestCase
         $branch = Branch::factory()->create();
         MatchResult::factory()->auto()->create(['branch_id' => $branch->id, 'task_id' => $task->id]);
 
-        // Start with null narrative so we can tell whether global ran before fallback was invoked
         $reportTask = ReportTask::factory()->create([
             'report_id' => $report->id,
             'task_id'   => $task->id,
             'narrative' => null,
         ]);
 
-        // Day has no commits at all — fallbackToGlobalNarrative() is triggered immediately
         $reportDay = ReportDay::factory()->fromCommits()->create(['report_id' => $report->id, 'date' => '2024-03-11']);
         $reportDayTask = ReportDayTask::factory()->create([
             'report_day_id'  => $reportDay->id,
             'report_task_id' => $reportTask->id,
         ]);
-        // No Commit created — commits list is empty, fallback fires
 
         ($this->action)($report);
 
         $reportDayTask->refresh();
 
-        // After the order fix: global ran first → narrativeText was set → fallback copies it
-        // Before the fix: fallback ran first while reportTask.narrative was still null
         $this->assertSame(
             $this->mockLlm->narrativeText,
             $reportDayTask->narrative,
@@ -325,13 +309,6 @@ final class GenerateNarrativesForReportTest extends TestCase
         );
     }
 
-    /**
-     * When a day-task has no commits, the fallback must copy the global narrative
-     * that was generated earlier in the same invocation.
-     *
-     * Symmetrical to the order test above; kept as a focused scenario.
-     * TDD red test — fails until the execution order is fixed.
-     */
     public function test_day_task_fallback_uses_already_generated_global_narrative(): void
     {
         $report = Report::factory()->draft()->create();
@@ -350,7 +327,6 @@ final class GenerateNarrativesForReportTest extends TestCase
             'report_day_id'  => $reportDay->id,
             'report_task_id' => $reportTask->id,
         ]);
-        // No commits → fallbackToGlobalNarrative() is triggered
 
         ($this->action)($report);
 
@@ -363,16 +339,6 @@ final class GenerateNarrativesForReportTest extends TestCase
         );
     }
 
-    /**
-     * When global LLM generation fails (placeholder is set) and the day-task also has no commits,
-     * the fallback must copy the placeholder — not null or any stale pre-DB value.
-     *
-     * With the current wrong order (day-task first), the fallback copies the pre-seeded factory
-     * value (random paragraph), not the placeholder. Only after the order fix will the placeholder
-     * be available when fallback runs.
-     *
-     * TDD red test — fails until the execution order is fixed.
-     */
     public function test_day_task_fallback_uses_placeholder_when_global_also_failed(): void
     {
         $report = Report::factory()->draft()->create();
@@ -391,9 +357,7 @@ final class GenerateNarrativesForReportTest extends TestCase
             'report_day_id'  => $reportDay->id,
             'report_task_id' => $reportTask->id,
         ]);
-        // No commits → fallbackToGlobalNarrative() is triggered
 
-        // All LLM calls fail — global generation results in placeholder
         $this->mockLlm->shouldFail = true;
 
         ($this->action)($report);
@@ -415,13 +379,7 @@ final class GenerateNarrativesForReportTest extends TestCase
         $this->action = new GenerateNarrativesForReport($this->mockLlm, new NarrativeSupport());
     }
 
-    /**
-     * Returns only the day-task generateNarrative() calls in call order.
-     * Filters by matching each narrativeRequests index against callOrder,
-     * so results are resilient to changes in global/day-task execution order.
-     *
-     * @return list<\App\Domain\Narrative\DTOs\TaskNarrativeRequest>
-     */
+    /** @return list<\App\Domain\Narrative\DTOs\TaskNarrativeRequest> */
     private function dayTaskRequests(): array
     {
         return array_values(array_filter(

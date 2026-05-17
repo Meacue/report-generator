@@ -26,6 +26,9 @@ final readonly class GenerateNarrativesForReport
     ) {
     }
 
+    /**
+     * Reloads the nested reportTask relation between global and day-task stages so the fallback observes the freshly written global narrative.
+     */
     public function __invoke(Report $report): void
     {
         $report->load(['reportTasks.task.matchResults.branch.commits', 'reportDays.reportDayTasks.reportTask.task']);
@@ -33,9 +36,6 @@ final readonly class GenerateNarrativesForReport
 
         $this->generateGlobalTaskNarratives($report, $systemPrompt);
 
-        // Refresh nested reportTask relations so day-task fallback sees the just-generated global narratives
-        // (Eloquent caches each relation separately, so updating $report->reportTasks does not propagate
-        // to $report->reportDays->reportDayTasks->reportTask instances).
         $report->load('reportDays.reportDayTasks.reportTask.task');
 
         $this->generateDayTaskNarratives($report, $systemPrompt);

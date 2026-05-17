@@ -39,7 +39,6 @@ final class LlmConfigValidatorTest extends TestCase
 
         $validator = new LlmConfigValidator($mock);
 
-        // Must not throw — if it does, the test will fail automatically
         $validator->validate();
 
         $this->assertTrue(true);
@@ -52,7 +51,6 @@ final class LlmConfigValidatorTest extends TestCase
 
         $this->app->bind(LlmProviderInterface::class, fn (): MockLlmProvider => $mock);
 
-        // Resolve from container to simulate how the controller would inject it
         /** @var LlmProviderInterface $resolvedProvider */
         $resolvedProvider = $this->app->make(LlmProviderInterface::class);
         $validator = new LlmConfigValidator($resolvedProvider);

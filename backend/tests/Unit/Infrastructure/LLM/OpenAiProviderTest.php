@@ -74,7 +74,6 @@ final class OpenAiProviderTest extends TestCase
         } catch (\InvalidArgumentException) {
             $threw = true;
         } catch (\Throwable) {
-            // Swallow other exceptions — guard not yet implemented
         }
 
         Http::assertNothingSent();
