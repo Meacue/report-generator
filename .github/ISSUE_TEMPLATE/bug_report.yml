@@ -4,24 +4,16 @@ title: "fix: "
 labels: ["bug"]
 body:
   - type: textarea
-    id: what-happened
+    id: description
     attributes:
-      label: What happened
-      description: Describe the observed behavior.
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: What you expected
-      description: The behavior you expected to see.
+      label: Description
+      description: What happened and what you expected to see instead.
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
       label: Steps to reproduce
-      description: A step-by-step recipe.
       placeholder: |
         1. Open the /reports page
         2. Click "Generate"
@@ -29,21 +21,9 @@ body:
     validations:
       required: true
   - type: textarea
-    id: environment
-    attributes:
-      label: Environment
-      placeholder: |
-        OS:           Windows 11
-        PHP:          8.2.12
-        Docker:       24.0.6
-        Branch:       master @ commit abc123
-    validations:
-      required: false
-  - type: textarea
     id: logs
     attributes:
       label: Logs / screenshots
-      description: If available.
       render: shell
     validations:
       required: false
