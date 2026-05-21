@@ -7,31 +7,22 @@ body:
     id: problem
     attributes:
       label: Problem this solves
-      description: Describe the problem the feature would solve. Without a problem statement the feature isn't justified.
+      description: Without a problem statement the feature isn't justified.
     validations:
       required: true
   - type: textarea
     id: solution
     attributes:
       label: Proposed solution
-      description: How you see the implementation. High-level is fine.
+      description: High-level is fine.
     validations:
       required: true
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives
-      description: Other options considered and why they were rejected.
-    validations:
-      required: false
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance criteria
-      description: How we'll know the feature is done.
       placeholder: |
         - [ ] Endpoint /api/foo returns 200 for a valid request
         - [ ] Covered by a unit test
-        - [ ] Documented in README/AGENTS
     validations:
       required: false
