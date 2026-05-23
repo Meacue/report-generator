@@ -213,6 +213,7 @@ export function ReportDaysTab({ reportId, days }: Props) {
                   style={{
                     padding: "4px 12px",
                     background: "#eee",
+                    color: "#333",
                     border: "none",
                     borderRadius: "4px",
                     cursor: "pointer",
@@ -228,6 +229,7 @@ export function ReportDaysTab({ reportId, days }: Props) {
                   style={{
                     padding: "4px 12px",
                     background: "#eee",
+                    color: "#333",
                     border: "none",
                     borderRadius: "4px",
                     cursor: regenerateDay.isPending ? "not-allowed" : "pointer",
@@ -243,6 +245,7 @@ export function ReportDaysTab({ reportId, days }: Props) {
                   style={{
                     padding: "4px 12px",
                     background: "#eee",
+                    color: "#333",
                     border: "none",
                     borderRadius: "4px",
                     cursor: undoDay.isPending ? "not-allowed" : "pointer",
