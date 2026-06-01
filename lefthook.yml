@@ -86,6 +86,14 @@ pre-commit:
       skip:
         - merge
         - rebase
+    dockerfile-lint:
+      # Pinned digest must match the Makefile's HADOLINT_IMAGE.
+      # MSYS_NO_PATHCONV=1 — Windows/Git Bash path-mangling guard (no-op elsewhere).
+      glob: ".docker/**/Dockerfile"
+      run: MSYS_NO_PATHCONV=1 docker run --rm -v "$PWD:/repo:ro" -w /repo ghcr.io/hadolint/hadolint:v2.14.0@sha256:27086352fd5e1907ea2b934eb1023f217c5ae087992eb59fde121dce9c9ff21e hadolint {staged_files}
+      skip:
+        - merge
+        - rebase
 
 # pre-push can be enabled once the tests are stably green.
 # pre-push:
