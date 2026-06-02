@@ -184,3 +184,12 @@ jobs:
 
       - name: Run Vitest
         run: npm run test:ci
+
+  # ─── Docker: hadolint ─────────────────────────────────────────
+  lint-dockerfile:
+    name: Dockerfile lint (hadolint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: hadolint (same `make lint-docker` as local)
+        run: make lint-docker

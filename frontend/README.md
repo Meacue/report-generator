@@ -54,7 +54,7 @@ Local commands (the npm scripts in `package.json`) run inside the `node` contain
 Linting and auto-fix run from the repo root for the whole repo:
 
 ```bash
-make lint   # backend + frontend (Pint, PHPStan, ESLint, Prettier)
+make lint   # backend + frontend (Pint, PHPStan, ESLint, Prettier, hadolint)
 make fix    # auto-fix (Pint + Prettier)
 ```
 
