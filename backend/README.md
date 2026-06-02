@@ -48,7 +48,7 @@ Backend-specific commands:
 
 - `make migrate` — apply migrations
 - `make test` — PHPUnit (in-memory SQLite)
-- `make lint` — Pint + PHPStan (level 10)
+- `make lint` — Pint + PHPStan (level 10) + hadolint
 - `make fix` — Pint auto-fixes
 - Run a specific test: `docker exec moronocracy-backend php artisan test --filter=TestName`
 

@@ -148,6 +148,11 @@ The commit message is checked automatically in the commit-msg hook (lefthook).
 - TypeScript strict mode, functional components.
 - ESLint + Prettier for linting and formatting.
 
+### Docker
+
+- Dockerfiles (`.docker/*/Dockerfile`) are linted with [hadolint](https://github.com/hadolint/hadolint).
+- `DL3018` (pin apk versions) is intentionally disabled — see `.hadolint.yaml` for the rationale.
+
 ### Pre-commit checks
 
 ```bash
