@@ -1,0 +1,15 @@
+# hadolint configuration — https://github.com/hadolint/hadolint#configure
+failure-threshold: warning
+
+# Lock FROM images to trusted registries (activates DL3026).
+trustedRegistries:
+  - docker.io
+  - ghcr.io
+
+ignored:
+  # DL3018 "Pin versions in apk add".
+  # Alpine package mirrors keep only the current version of each package for a
+  # given release, so a pinned `pkg=1.2.3-r0` disappears once Alpine ships -r1
+  # and the build breaks. Reproducibility is anchored on the pinned Alpine base
+  # image tags (php:8.4-fpm-alpine, node:20-alpine) instead.
+  - DL3018

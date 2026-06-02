@@ -12,7 +12,7 @@ make down        # stop containers
 make build       # rebuild images
 make migrate     # apply migrations (php artisan migrate)
 make test        # PHPUnit — all tests (vendor/bin/phpunit)
-make lint        # all checks: Pint, PHPStan, ESLint, Prettier
+make lint        # all checks: Pint, PHPStan, ESLint, Prettier, hadolint
 make fix         # auto-fix: Pint + Prettier
 make shell       # sh shell inside the app container
 make logs        # docker compose logs -f

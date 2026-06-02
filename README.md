@@ -87,7 +87,7 @@ make down        # Stop containers
 make build       # Rebuild images
 make migrate     # Apply migrations
 make test        # Run tests (PHPUnit)
-make lint        # Lint the code (Pint, PHPStan, ESLint, Prettier)
+make lint        # Lint the code (Pint, PHPStan, ESLint, Prettier, hadolint)
 make fix         # Auto-format
 make shell       # Shell inside the app container
 make logs        # Container logs
