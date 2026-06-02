@@ -16,7 +16,7 @@ RUN apk add --no-cache --virtual .build-deps autoconf gcc g++ make \
     && docker-php-ext-enable redis \
     && apk del .build-deps
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY php.ini /usr/local/etc/php/conf.d/custom.ini

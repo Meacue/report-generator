@@ -1,11 +1,12 @@
 # Default: auto-detect text/binary, normalize line endings on commit
 * text=auto
 
-# Always LF — executed by Linux (shell, Dockerfiles, entrypoints)
+# Always LF — executed by Linux (shell, Dockerfiles, entrypoints, Makefile)
 *.sh           text eol=lf
 *.bash         text eol=lf
 Dockerfile     text eol=lf
 *.dockerfile   text eol=lf
+Makefile       text eol=lf
 
 # Config files read by Linux tools in containers
 *.conf         text eol=lf
