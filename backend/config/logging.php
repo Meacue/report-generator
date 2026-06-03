@@ -73,6 +73,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'testing' => [
+            'driver'               => 'daily',
+            'path'                 => storage_path('logs/testing.log'),
+            'level'                => env('LOG_LEVEL', 'debug'),
+            'days'                 => env('LOG_TESTING_DAYS', 1),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver'               => 'slack',
             'url'                  => env('LOG_SLACK_WEBHOOK_URL'),
