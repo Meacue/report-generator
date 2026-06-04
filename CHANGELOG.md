@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.2.9](https://github.com/Meacue/report-generator/compare/0.2.8...0.2.9) (2026-06-04)
+
+
+### Fixed
+
+* **logging:** isolate test-run logs in a dedicated daily channel ([#158](https://github.com/Meacue/report-generator/issues/158)) ([f55c051](https://github.com/Meacue/report-generator/commit/f55c051df0dbd164b0ec7bb8e60b0059dc02f44b)), closes [#157](https://github.com/Meacue/report-generator/issues/157)
+* **ui:** make day card action buttons readable in dark theme ([#138](https://github.com/Meacue/report-generator/issues/138)) ([b1afdfb](https://github.com/Meacue/report-generator/commit/b1afdfb7a89c352595a0273335399f33fe3426d7))
+
+
+### Changed
+
+* bump @tanstack/react-query ([#129](https://github.com/Meacue/report-generator/issues/129)) ([62eddb8](https://github.com/Meacue/report-generator/commit/62eddb819a4cfb90801306f47248093a126b7ad0))
+* bump @tanstack/react-query ([#141](https://github.com/Meacue/report-generator/issues/141)) ([6ae1857](https://github.com/Meacue/report-generator/commit/6ae185773f31ff825cfef427b3adb1a5f3b4b43f))
+* bump @types/node ([#130](https://github.com/Meacue/report-generator/issues/130)) ([66a87fd](https://github.com/Meacue/report-generator/commit/66a87fda2f444a8d722718ac621ce1f37f041762))
+* bump @vitejs/plugin-react in /frontend in the react group ([#127](https://github.com/Meacue/report-generator/issues/127)) ([280698f](https://github.com/Meacue/report-generator/commit/280698f35ec14cebd9696466c277088fbc06eed6))
+* bump jsdom from 26.1.0 to 29.1.1 in /frontend ([#142](https://github.com/Meacue/report-generator/issues/142)) ([41c5312](https://github.com/Meacue/report-generator/commit/41c53123c44ef7b23655ecf229e593554e2d8184))
+* bump laravel/sail in /backend in the dev-deps group ([#126](https://github.com/Meacue/report-generator/issues/126)) ([ae175c5](https://github.com/Meacue/report-generator/commit/ae175c57ef02ee88def83fe003de69b0e8e4e92c))
+* bump lefthook from 2.1.6 to 2.1.9 ([#152](https://github.com/Meacue/report-generator/issues/152)) ([5729150](https://github.com/Meacue/report-generator/commit/57291500a7a213bdcb12afed03292851ca58559a))
+* bump symfony/http-kernel from 7.4.11 to 7.4.13 in /backend ([#145](https://github.com/Meacue/report-generator/issues/145)) ([9088193](https://github.com/Meacue/report-generator/commit/90881931faf73ee17598afc57c35a7496700fba5))
+* bump symfony/mailer from 7.4.8 to 7.4.12 in /backend ([#146](https://github.com/Meacue/report-generator/issues/146)) ([1106bab](https://github.com/Meacue/report-generator/commit/1106babd7f5909c6dc10b8ce0a6c25061038469a))
+* bump symfony/mime from 7.4.9 to 7.4.13 in /backend ([#147](https://github.com/Meacue/report-generator/issues/147)) ([98ce54f](https://github.com/Meacue/report-generator/commit/98ce54f1d24367efcd9a911afe56cce376fd3813))
+* bump symfony/routing from 7.4.9 to 7.4.13 in /backend ([#144](https://github.com/Meacue/report-generator/issues/144)) ([5ea4fe4](https://github.com/Meacue/report-generator/commit/5ea4fe4311ae4825b33dd13cad203c63f84198d2))
+* bump symfony/yaml from 7.4.11 to 7.4.13 in /backend ([#148](https://github.com/Meacue/report-generator/issues/148)) ([46bd19f](https://github.com/Meacue/report-generator/commit/46bd19f7a39349876492334e402cb9079556f6fd))
+* bump the commitlint group with 2 updates ([#150](https://github.com/Meacue/report-generator/issues/150)) ([e348204](https://github.com/Meacue/report-generator/commit/e3482046f8d29984373134780f2718cabaf6ef7a))
+* bump the dev-deps group across 1 directory with 2 updates ([#151](https://github.com/Meacue/report-generator/issues/151)) ([b109358](https://github.com/Meacue/report-generator/commit/b109358f5a41fd504fd868ab3f7dfa10a3e9c59a))
+* bump the eslint group across 1 directory with 2 updates ([#136](https://github.com/Meacue/report-generator/issues/136)) ([45228c7](https://github.com/Meacue/report-generator/commit/45228c721b99d450cec891251ff89442e0fec86a))
+* bump the react group across 1 directory with 3 updates ([#156](https://github.com/Meacue/report-generator/issues/156)) ([2c62121](https://github.com/Meacue/report-generator/commit/2c62121f6446a869831c4f1761c3f069575e3318))
+* bump vite from 8.0.12 to 8.0.14 in /frontend ([#131](https://github.com/Meacue/report-generator/issues/131)) ([7442604](https://github.com/Meacue/report-generator/commit/74426041ba7a38215042c236b9e2f9ef9deaf4d2))
+* bump vitest from 3.2.4 to 4.1.0 in /frontend ([#155](https://github.com/Meacue/report-generator/issues/155)) ([258532a](https://github.com/Meacue/report-generator/commit/258532a3c1e8c5a9dccdb3d92c8d7bdc92c6e826))
+
 ## [0.2.8](https://github.com/Meacue/report-generator/compare/0.2.7...0.2.8) (2026-05-17)
 
 
