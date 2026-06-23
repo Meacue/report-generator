@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.10](https://github.com/Meacue/report-generator/compare/0.2.9...0.2.10) (2026-06-23)
+
+
+### Changed
+
+* bump @tanstack/react-query ([#164](https://github.com/Meacue/report-generator/issues/164)) ([037029c](https://github.com/Meacue/report-generator/commit/037029c199bd3298c5be4083f5bda9ad0b84f815))
+* bump @types/react ([#162](https://github.com/Meacue/report-generator/issues/162)) ([57b76e4](https://github.com/Meacue/report-generator/commit/57b76e4f68d014df4a71bbc73c65d0dc2d460125))
+* bump guzzlehttp/guzzle from 7.10.6 to 7.12.1 in /backend ([#171](https://github.com/Meacue/report-generator/issues/171)) ([ba11a2d](https://github.com/Meacue/report-generator/commit/ba11a2dc08847f3eddcea4e8c8a4676d4859c089))
+* bump guzzlehttp/psr7 from 2.10.4 to 2.12.1 in /backend ([#172](https://github.com/Meacue/report-generator/issues/172)) ([9b16b1f](https://github.com/Meacue/report-generator/commit/9b16b1f40aca1d54bf8df1a5a4abde2e5c2cd8cb))
+* bump larastan/larastan ([#161](https://github.com/Meacue/report-generator/issues/161)) ([4ebc128](https://github.com/Meacue/report-generator/commit/4ebc128f821043bfcc584dcc33230d320a70511c))
+* bump react-router and react-router-dom in /frontend ([#159](https://github.com/Meacue/report-generator/issues/159)) ([61390ca](https://github.com/Meacue/report-generator/commit/61390ca68519abcf69f9f9ad94342b91ec852778))
+* bump the dev-deps group across 1 directory with 2 updates ([#170](https://github.com/Meacue/report-generator/issues/170)) ([83817a6](https://github.com/Meacue/report-generator/commit/83817a694f31d5bc7c79e3122f24ff53e707d8b1))
+* bump undici from 7.25.0 to 7.28.0 in /frontend ([#169](https://github.com/Meacue/report-generator/issues/169)) ([a43f0c9](https://github.com/Meacue/report-generator/commit/a43f0c98d37772f9bfcf66e50c2a3df574712f1a))
+* bump vite from 8.0.14 to 8.0.16 in /frontend ([#166](https://github.com/Meacue/report-generator/issues/166)) ([c4e21d0](https://github.com/Meacue/report-generator/commit/c4e21d015dbe176094adb0f1a1aec5bd71bd429b))
+* bump vitest from 4.1.0 to 4.1.8 in /frontend ([#167](https://github.com/Meacue/report-generator/issues/167)) ([3ccc2d4](https://github.com/Meacue/report-generator/commit/3ccc2d4cef3353b1ecdd7f46eec0670cea54ab10))
+
 ## [0.2.9](https://github.com/Meacue/report-generator/compare/0.2.8...0.2.9) (2026-06-04)
 
 
